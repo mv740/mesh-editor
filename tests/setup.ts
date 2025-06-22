@@ -1,1 +1,4 @@
-import '@testing-library/jest-dom'
+// import '@testing-library/jest-dom'
+
+// Import all your CSS
+import '../src/index.css'

@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { MyButton } from '../src'
+import { Button } from '../src'
 
 test('button', () => {
-  render(<MyButton type="primary" />)
+  render(<Button />)
 
   const buttonElement = screen.getByText(/my button: type primary/i)
 
