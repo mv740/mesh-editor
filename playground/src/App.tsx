@@ -1,9 +1,9 @@
-import { Button } from '../../src'
+import { MeshEditor } from '../../src'
 
 export function App() {
   return (
-    <>
-      <Button variant="destructive">Click me</Button>
-    </>
+    <div className="m-8 dark">
+      <MeshEditor title="InputTitle" description="InputDescription" />,
+    </div>
   )
 }
