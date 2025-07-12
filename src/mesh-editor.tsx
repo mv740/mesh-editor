@@ -1,4 +1,6 @@
-import React from 'react'
+import { ArcballControls } from '@react-three/drei'
+import { Canvas } from '@react-three/fiber'
+import React, { Suspense, useEffect } from 'react'
 import {
   Card,
   CardAction,
@@ -8,27 +10,43 @@ import {
   CardHeader,
   CardTitle,
 } from './components/ui/card'
-
+import { GeometryModel } from './geometry-model'
 export const meshEditorProps = {
   title: 'Mesh Editor',
   description: 'Edit your mesh',
+}
+
+interface InputSettings {
+  file: File
 }
 
 interface MeshEditorProps {
   title?: string
   description?: string
   actionLabel?: string
-  content?: React.ReactNode
+  inputSettings?: InputSettings
   footer?: React.ReactNode
 }
 
 export function MeshEditor({
   title = meshEditorProps.title,
   description = meshEditorProps.description,
-  actionLabel = 'Action',
-  content = 'Card Content',
-  footer = 'Card Footer',
+  actionLabel,
+  inputSettings,
+  footer,
 }: MeshEditorProps) {
+  const [fileObjectPath, setFileObjectPath] = React.useState<string | null>(
+    null,
+  )
+
+  useEffect(() => {
+    if (inputSettings?.file) {
+      const objectFile = URL.createObjectURL(inputSettings?.file)
+
+      setFileObjectPath(objectFile)
+    }
+  }, [inputSettings?.file])
+
   return (
     <Card>
       <CardHeader>
@@ -38,12 +56,41 @@ export function MeshEditor({
         </CardDescription>
         <CardAction>{actionLabel}</CardAction>
       </CardHeader>
-      <CardContent>
-        {typeof content === 'string' ? <p>{content}</p> : content}
+      {/* TODO: able to dynamically change the canvas size */}
+      <CardContent className="h-[900px]">
+        <Canvas
+          data-testid="canvas"
+          camera={{
+            position: [0, 0, 5],
+            fov: 50,
+            near: 0.00001, // Extremely small near plane
+            far: 10000, // Very large far plane
+          }}
+        >
+          <Suspense fallback={null}>
+            {fileObjectPath && (
+              <>
+                {/* Top light */}
+                <directionalLight position={[0, 10, 0]} intensity={1} />
+                <GeometryModel stlUrl={fileObjectPath} />
+              </>
+            )}
+          </Suspense>
+          <ArcballControls
+            // ref={arcballRef}
+            minDistance={0.001}
+            maxDistance={1000}
+            enableGrid={true}
+            adjustNearFar={true}
+            makeDefault
+          />
+        </Canvas>
       </CardContent>
-      <CardFooter>
-        {typeof footer === 'string' ? <p>{footer}</p> : footer}
-      </CardFooter>
+      {footer && (
+        <CardFooter>
+          {typeof footer === 'string' ? <p>{footer}</p> : footer}
+        </CardFooter>
+      )}
     </Card>
   )
 }

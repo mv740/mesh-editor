@@ -11,7 +11,7 @@
       "@/*": ["./src/*"]
     },
     "resolveJsonModule": true,
-    "types": ["node", "@vitest/browser/providers/playwright"],
+    "types": ["node", "@vitest/browser/providers/playwright", "vite/client"],
     "strict": true,
     "noUnusedLocals": true,
     "declaration": true,
