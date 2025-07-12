@@ -4,7 +4,9 @@ import { MeshEditor } from '../src'
 
 test('renders name', async () => {
   const { getByTestId } = render(
-    <MeshEditor title="InputTitle" description="InputDescription" />,
+    <div className="m-8 dark">
+      <MeshEditor title="InputTitle" description="InputDescription" />
+    </div>,
   )
   const title = await getByTestId('card-title')
   expect(title).toHaveTextContent('InputTitle')
