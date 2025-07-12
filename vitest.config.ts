@@ -13,7 +13,7 @@ export default defineConfig({
 
   test: {
     globals: true,
-    setupFiles: './tests/setup.ts',
+
     coverage: {
       reporter: ['text', 'html', 'json-summary', 'json', 'lcov'],
       reportOnFailure: true,
@@ -26,10 +26,14 @@ export default defineConfig({
         // add "extends: true" to inherit the options from the root config
         extends: true,
         test: {
-          include: ['tests/**/*.test.{ts,js}'],
+          deps: {
+            inline: ['vitest-canvas-mock'],
+          },
+          include: ['tests/**/*.test.{ts,js}', 'src/**/*.test.{ts,tsx}'],
           // it is recommended to define a name when using inline configs
           name: 'unit',
           environment: 'happy-dom',
+          setupFiles: './tests/setup-unit-test.ts',
         },
       },
       {
@@ -44,6 +48,7 @@ export default defineConfig({
             instances: [{ browser: 'chromium' }],
           },
           name: 'e2e',
+          setupFiles: './tests/setup.ts',
         },
       },
     ],
