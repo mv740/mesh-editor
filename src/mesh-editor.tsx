@@ -1,7 +1,8 @@
 import { ArcballControls, GizmoHelper, GizmoViewport } from '@react-three/drei'
-import { Canvas, type Vector3 } from '@react-three/fiber'
+import { Canvas } from '@react-three/fiber'
 import React, { Suspense, useEffect, useRef, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { LandmarksControls } from './components/editor/landmarks-controls'
 import { ViewControls } from './components/editor/view-controls'
 import {
   Card,
@@ -13,10 +14,7 @@ import {
   CardTitle,
 } from './components/ui/card'
 import { GeometryModel, type SelectedPoint } from './geometry-model'
-
-// ---------------------------- landmarks --------------------------------
-
-// ----------------------------- viewer ----------------------------------
+import type { Vector3 } from 'three'
 
 interface InputSettings {
   file: File
@@ -58,10 +56,17 @@ export function MeshEditor({
   // Landmarks
   const nextPointId = useRef(1)
   const [selectedPoints, setSelectedPoints] = useState<SelectedPoint[]>([])
+  const [selectedLandmarkId, setSelectedLandmarkId] = useState<number | null>(
+    null,
+  )
   const [landmarksVisible, setLandmarksVisible] = useState<boolean>(true)
-  const handlePointSelect = (position: Vector3) => {
-    const newPoint = {
+  const [landmarksLabelsVisible, setLandmarksLabelsVisible] =
+    useState<boolean>(true)
+
+  const handlePointSelect = (position: Vector3, normal: Vector3) => {
+    const newPoint: SelectedPoint = {
       position,
+      normal,
       id: nextPointId.current++,
     }
     setSelectedPoints((prevPoints) => [...prevPoints, newPoint])
@@ -115,6 +120,14 @@ export function MeshEditor({
 
       <CardContent className="h-[900px] ">
         <div className="w-full h-full rounded-lg overflow-hidden relative">
+          {editorState === 'landmarks' && (
+            <LandmarksControls
+              selectedPoints={selectedPoints}
+              setSelectedPoints={setSelectedPoints}
+              selectedLandmarkId={selectedLandmarkId}
+              setSelectedLandmarkId={setSelectedLandmarkId}
+            />
+          )}
           <ViewControls
             landmarksVisible={landmarksVisible}
             setLandmarksVisible={setLandmarksVisible}
@@ -122,6 +135,8 @@ export function MeshEditor({
             setOpacity={setOpacity}
             setWireframeVisible={setWireframeVisible}
             wireframeVisible={wireframeVisible}
+            landmarkLabelsVisible={landmarksLabelsVisible}
+            setLandmarkLabelsVisible={setLandmarksLabelsVisible}
           />
           <Canvas
             style={{ background: '#e0e0e0' }}
@@ -142,9 +157,12 @@ export function MeshEditor({
                     editorState={editorState}
                     selectedPoints={selectedPoints}
                     onPointSelect={handlePointSelect}
+                    selectedLandmarkId={selectedLandmarkId}
+                    setSelectedLandmarkId={setSelectedLandmarkId}
                     landmarksVisible={landmarksVisible}
                     wireframeVisible={wireframeVisible}
                     meshOpacity={opacity}
+                    landmarkLabelsVisible={landmarksLabelsVisible}
                   />
                   <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
                     <GizmoViewport
