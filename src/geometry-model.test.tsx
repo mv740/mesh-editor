@@ -54,18 +54,22 @@ describe('GeometryModel', () => {
       {
         id: 1,
         position: new Vector3(0, 0, 0), // Center of mesh
+        normal: new Vector3(0, 0, 1), // Normal pointing outwards
       },
       {
         id: 2,
         position: new Vector3(1, 0, 0), // Right side
+        normal: new Vector3(0, 0, 1),
       },
       {
         id: 3,
         position: new Vector3(-1, 0, 0), // Left side
+        normal: new Vector3(0, 0, 1),
       },
       {
         id: 4,
         position: new Vector3(0, 1, 0), // Top
+        normal: new Vector3(0, 0, 1),
       },
     ]
 
@@ -93,12 +97,20 @@ describe('GeometryModel', () => {
     for (const [i, selectedPoint] of selectedPoints.entries()) {
       const landmark = landmarkItems?.[i]
       expect(landmark).toBeDefined()
-      expect(landmark?.props.name).toBe(`landmark-${selectedPoint.id}`)
-      const position = (landmark as any).props?.position as Array<number>
+      expect(landmark?.type).toBe('Group')
+      expect(landmark?.props?.name).toBe(`landmark-group-${selectedPoint.id}`)
 
-      expect(position[0]).toBeCloseTo(selectedPoint.position.x) // x
-      expect(position[1]).toBeCloseTo(selectedPoint.position.y) // y
-      expect(position[2]).toBeCloseTo(selectedPoint.position.z) // z
+      // Get the mesh (first child of the group)
+      const landmarkMesh = landmark?.children?.[0]
+      expect(landmarkMesh).toBeDefined()
+      expect(landmarkMesh?.type).toBe('Mesh')
+      expect(landmarkMesh?.props?.name).toBe(`landmark-${selectedPoint.id}`)
+
+      // Compare the mesh position with the selected point
+      const position = (landmarkMesh as any).props?.position as Array<number>
+      expect(position[0]).toBeCloseTo(selectedPoint.position.x)
+      expect(position[1]).toBeCloseTo(selectedPoint.position.y)
+      expect(position[2]).toBeCloseTo(selectedPoint.position.z)
 
       expect(landmark.instance.visible).toBe(true)
     }

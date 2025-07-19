@@ -13,10 +13,12 @@ type ViewControlsProps = {
   setOpacity: (opacity: number) => void
   landmarksVisible: boolean
   setLandmarksVisible: (visible: boolean) => void
+  landmarkLabelsVisible: boolean
+  setLandmarkLabelsVisible: (visible: boolean) => void
 }
 
 /**
- * Renders view controls for adjusting wireframe visibility, opacity, and landmarks.
+ * Renders view controls for adjusting the view of the mesh editor.
  *
  * @component
  * @param {object} props - The component props
@@ -26,6 +28,8 @@ type ViewControlsProps = {
  * @param {Function} props.setOpacity - Callback to update opacity value
  * @param {boolean} props.landmarksVisible - Indicates whether landmarks are currently visible
  * @param {Function} props.setLandmarksVisible - Callback to toggle landmarks visibility
+ * @param {boolean} props.landmarkLabelsVisible - Indicates whether landmark labels are currently visible
+ * @param {Function} props.setLandmarkLabelsVisible - Callback to toggle landmark labels visibility
  * @returns {React.ReactElement} A card with switches and slider for view control settings
  */
 export const ViewControls = ({
@@ -35,11 +39,12 @@ export const ViewControls = ({
   setOpacity,
   landmarksVisible,
   setLandmarksVisible,
+  landmarkLabelsVisible,
+  setLandmarkLabelsVisible,
 }: ViewControlsProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
   if (!isExpanded) {
-    console.log('not expanded')
     return (
       <Button
         variant="secondary"
@@ -57,7 +62,6 @@ export const ViewControls = ({
       </Button>
     )
   }
-  console.log('expanded')
 
   return (
     <Card
@@ -73,7 +77,6 @@ export const ViewControls = ({
         <div className="flex items-center justify-between">
           <CardTitle data-testid="view-control-title">View Controls</CardTitle>
           <Button
-            variant=""
             size="icon"
             className="size-6"
             onClick={() => setIsExpanded(false)}
@@ -112,7 +115,17 @@ export const ViewControls = ({
               onCheckedChange={setLandmarksVisible}
             />
           </div>
-        </div>{' '}
+          {landmarksVisible && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="landmark-labels">Landmark Labels:</Label>
+              <Switch
+                id="landmark-labels"
+                checked={landmarkLabelsVisible}
+                onCheckedChange={setLandmarkLabelsVisible}
+              />
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
