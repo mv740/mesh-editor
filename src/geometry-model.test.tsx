@@ -1,14 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import process from 'node:process'
-
 import ReactThreeTestRenderer from '@react-three/test-renderer'
+import { cleanup } from '@testing-library/react'
 import React from 'react'
 import { Vector3 } from 'three'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { GeometryModel, type SelectedPoint } from './geometry-model'
 
 describe('GeometryModel', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   it('should render mesh', async () => {
     // Resolve from project root
     const filePath = resolve(process.cwd(), 'playground/assets/bunny.bin.stl')
@@ -76,7 +80,6 @@ describe('GeometryModel', () => {
     const renderer = await ReactThreeTestRenderer.create(
       <GeometryModel
         stlUrl={dataUrl}
-        // onPointSelect={onPointSelect}
         selectedPoints={selectedPoints}
         editorState={'landmarks'}
         selectedLandmarkId={1}
@@ -114,5 +117,59 @@ describe('GeometryModel', () => {
 
       expect(landmark.instance.visible).toBe(true)
     }
+  })
+
+  it('should add a landmark at the clicked position on the mesh', async () => {
+    const filePath = resolve(process.cwd(), 'playground/assets/bunny.bin.stl')
+    expect(existsSync(filePath)).toBe(true)
+    const fileBuffer = readFileSync(filePath)
+    const base64 = fileBuffer.toString('base64')
+    const dataUrl = `data:application/octet-stream;base64,${base64}`
+
+    const selectedPoints: SelectedPoint[] = []
+
+    const handlePointSelect = (
+      point: Vector3,
+      normal: Vector3,
+      // eslint-disable-next-line unused-imports/no-unused-vars
+      _landmarkIdToMove?: number,
+    ) => {
+      selectedPoints.push({
+        id: selectedPoints.length + 1,
+        position: point,
+        normal,
+      })
+    }
+
+    const renderer = await ReactThreeTestRenderer.create(
+      <GeometryModel
+        stlUrl={dataUrl}
+        selectedPoints={selectedPoints}
+        onPointSelect={handlePointSelect}
+        editorState={'landmarks'}
+        landmarksVisible={true}
+      />,
+    )
+
+    await renderer.advanceFrames(10, 1000)
+
+    const meshNode = renderer.scene.children[0].find(
+      (child) => child.type === 'Mesh',
+    )
+    expect(meshNode).toBeDefined()
+
+    // Correct way to fire event: use camelCase event name
+    await renderer.fireEvent(meshNode, 'onDoubleClick', {
+      point: new Vector3(5, 6, 7),
+      normal: new Vector3(0, 1, 0),
+    })
+
+    expect(selectedPoints.length).toBe(1)
+    expect(selectedPoints[0].position.x).toBeCloseTo(5)
+    expect(selectedPoints[0].position.y).toBeCloseTo(6)
+    expect(selectedPoints[0].position.z).toBeCloseTo(7)
+    expect(selectedPoints[0].normal.x).toBeCloseTo(0)
+    expect(selectedPoints[0].normal.y).toBeCloseTo(1)
+    expect(selectedPoints[0].normal.z).toBeCloseTo(0)
   })
 })

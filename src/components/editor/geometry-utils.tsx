@@ -40,9 +40,6 @@ export const ThickLine = ({
   color = 'white',
   linewidth = 2,
 }: ThickLineProps) => {
-  // React Three Fiber expects components to describe the scene declaratively
-  // especially for test renderers
-
   const positions = useMemo(
     () => [...start.toArray(), ...end.toArray()],
     [start, end],

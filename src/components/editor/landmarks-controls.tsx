@@ -36,6 +36,11 @@ export const LandmarksControls = ({
       setSelectedLandmarkId(null)
     }
   })
+
+  useHotkeys('esc', () => {
+    setSelectedLandmarkId(null)
+  })
+
   const handleRowClick = (pointId: number) => {
     if (selectedLandmarkId === pointId) {
       setSelectedLandmarkId(null)
