@@ -1,6 +1,6 @@
 import { Bvh } from '@react-three/drei'
 import { useLoader, useThree, type ThreeEvent } from '@react-three/fiber'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import { CanvasTexture, Vector3, type Mesh } from 'three'
 
 import { STLLoader } from 'three/examples/jsm/Addons.js'
@@ -18,7 +18,11 @@ export interface SelectedPoint {
 interface GeometryModelProps {
   stlUrl: string
   onLoad?: () => void
-  onPointSelect?: (point: Vector3, normal: Vector3) => void
+  onPointSelect?: (
+    point: Vector3,
+    normal: Vector3,
+    landmarkIdToMove?: number,
+  ) => void
   setSelectedLandmarkId?: (id: number | null) => void
   selectedPoints?: SelectedPoint[]
   editorState?: EditorState
@@ -27,12 +31,6 @@ interface GeometryModelProps {
   meshOpacity?: number
   wireframeVisible?: boolean
   landmarkLabelsVisible?: boolean
-}
-
-// Create a function to generate text texture using the canvas
-const createTextTexture = (text: string, isSelected: boolean = false) => {
-  const canvas = createLabelCanvas(text, isSelected)
-  return new CanvasTexture(canvas)
 }
 
 const LandmarkWithLabel = ({
@@ -55,7 +53,11 @@ const LandmarkWithLabel = ({
     event.stopPropagation()
 
     if (setSelectedLandmarkId) {
-      setSelectedLandmarkId(point.id)
+      if (point.id === selectedLandmarkId) {
+        setSelectedLandmarkId(null) // Deselect if already selected
+      } else {
+        setSelectedLandmarkId(point.id) // Select the clicked landmark
+      }
     }
   }
 
@@ -75,6 +77,12 @@ const LandmarkWithLabel = ({
   const spriteZ = point.position.z + direction.z * spriteDistance
 
   const spriteVector = new Vector3(spriteX, spriteY, spriteZ)
+
+  const spriteLabelMaterial = useMemo(() => {
+    const isSelected = point.id === selectedLandmarkId
+    const canvas = createLabelCanvas(String(point.id), isSelected)
+    return new CanvasTexture(canvas)
+  }, [point.id, selectedLandmarkId === point.id])
 
   return (
     <group key={point.id} name={`landmark-group-${point.id}`}>
@@ -107,15 +115,17 @@ const LandmarkWithLabel = ({
           />
           {/* Text sprite - positioned at fixed distance */}
           <sprite
+            onDoubleClick={(event) =>
+              editorState === 'landmarks'
+                ? handleLandmarkClick(event, point)
+                : undefined
+            }
             name={`landmark-sprite-${point.id}`}
             position={[spriteX, spriteY, spriteZ]}
             scale={[spriteScale, spriteScale, 1]}
           >
             <spriteMaterial
-              map={createTextTexture(
-                String(point.id),
-                point.id === selectedLandmarkId,
-              )}
+              map={spriteLabelMaterial}
               transparent={true}
               alphaTest={0.1}
             />
@@ -133,10 +143,10 @@ export const GeometryModel = ({
   editorState,
   selectedPoints = [],
   landmarksVisible = true,
-  selectedLandmarkId, // Add selected landmark ID
+  selectedLandmarkId,
   setSelectedLandmarkId,
-  meshOpacity = 1, // Default opacity
-  wireframeVisible = false, // Default wireframe visibility,
+  meshOpacity = 1,
+  wireframeVisible = false,
   landmarkLabelsVisible = true,
 }: GeometryModelProps) => {
   const geometry = useLoader(STLLoader, stlUrl)
@@ -174,12 +184,15 @@ export const GeometryModel = ({
       const normal = event.face?.normal.clone() || event.normal?.clone()
 
       if (onPointSelect && normal) {
-        onPointSelect(point, normal)
+        onPointSelect(point, normal, selectedLandmarkId || undefined)
       }
     }
 
     return true
   }
+
+  const tempSize = useRef(new Vector3())
+  const tempCenter = useRef(new Vector3())
 
   useEffect(() => {
     // Only run camera setup once when the model first loads
@@ -191,8 +204,8 @@ export const GeometryModel = ({
       const box = meshRef.current.geometry.boundingBox
       if (box) {
         // Create proper Vector3 objects for size and center
-        const size = box.getSize(new Vector3())
-        const center = box.getCenter(new Vector3())
+        const size = box.getSize(tempSize.current)
+        const center = box.getCenter(tempCenter.current)
 
         meshRef.current.position.set(-center.x, -center.y, -center.z)
         camera.position.set(0, 0, size.length() * 2)

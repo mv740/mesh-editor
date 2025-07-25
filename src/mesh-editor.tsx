@@ -63,7 +63,22 @@ export function MeshEditor({
   const [landmarksLabelsVisible, setLandmarksLabelsVisible] =
     useState<boolean>(true)
 
-  const handlePointSelect = (position: Vector3, normal: Vector3) => {
+  const handlePointSelect = (
+    position: Vector3,
+    normal: Vector3,
+    landmarkIdToMove?: number,
+  ) => {
+    if (landmarkIdToMove) {
+      const updatedPoints = selectedPoints.map((point) => {
+        if (point.id === landmarkIdToMove) {
+          return { ...point, position, normal }
+        }
+        return point
+      })
+      setSelectedPoints(updatedPoints)
+      return
+    }
+
     const newPoint: SelectedPoint = {
       position,
       normal,
