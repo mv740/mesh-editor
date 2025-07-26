@@ -88,7 +88,7 @@ export function MeshEditor({
   }
 
   return (
-    <Card className="dark">
+    <Card className="dark h-full flex-1 rounded-lg overflow-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
           {/* Left side - Title, Description, Action */}
@@ -133,69 +133,79 @@ export function MeshEditor({
         </div>
       </CardHeader>
 
-      <CardContent className="h-[900px] ">
-        <div className="w-full h-full rounded-lg overflow-hidden relative">
-          {editorState === 'landmarks' && (
-            <LandmarksControls
-              selectedPoints={selectedPoints}
-              setSelectedPoints={setSelectedPoints}
-              selectedLandmarkId={selectedLandmarkId}
-              setSelectedLandmarkId={setSelectedLandmarkId}
-            />
-          )}
-          <ViewControls
-            landmarksVisible={landmarksVisible}
-            setLandmarksVisible={setLandmarksVisible}
-            opacity={opacity}
-            setOpacity={setOpacity}
-            setWireframeVisible={setWireframeVisible}
-            wireframeVisible={wireframeVisible}
-            landmarkLabelsVisible={landmarksLabelsVisible}
-            setLandmarkLabelsVisible={setLandmarksLabelsVisible}
-          />
-          <Canvas
-            style={{ background: '#e0e0e0' }}
-            data-testid="canvas"
-            camera={{
-              position: [0, 0, 5],
-              fov: 50,
-              near: 0.00001,
-              far: 10000,
-            }}
-          >
-            <Suspense fallback={null}>
-              {fileObjectPath && (
-                <>
-                  <directionalLight position={[0, 10, 0]} intensity={1} />
-                  <GeometryModel
-                    stlUrl={fileObjectPath}
-                    editorState={editorState}
-                    selectedPoints={selectedPoints}
-                    onPointSelect={handlePointSelect}
-                    selectedLandmarkId={selectedLandmarkId}
-                    setSelectedLandmarkId={setSelectedLandmarkId}
-                    landmarksVisible={landmarksVisible}
-                    wireframeVisible={wireframeVisible}
-                    meshOpacity={opacity}
-                    landmarkLabelsVisible={landmarksLabelsVisible}
-                  />
-                  <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
-                    <GizmoViewport
-                      axisColors={['#ff3653', '#8adb00', '#2c8fff']}
-                      labelColor="black"
+      <CardContent className="flex-1 flex flex-col relative min-h-0">
+        <div className="relative w-full flex-1 rounded-lg overflow-hidden min-h-0">
+          {/* Overlay for controls */}
+          <div className="absolute inset-0 w-full h-full flex flex-wrap z-10 pointer-events-none justify-between p-3">
+            {editorState === 'landmarks' && (
+              <div className="pointer-events-auto">
+                <LandmarksControls
+                  selectedPoints={selectedPoints}
+                  setSelectedPoints={setSelectedPoints}
+                  selectedLandmarkId={selectedLandmarkId}
+                  setSelectedLandmarkId={setSelectedLandmarkId}
+                />
+              </div>
+            )}
+            <div className="pointer-events-auto ml-auto">
+              <ViewControls
+                landmarksVisible={landmarksVisible}
+                setLandmarksVisible={setLandmarksVisible}
+                opacity={opacity}
+                setOpacity={setOpacity}
+                setWireframeVisible={setWireframeVisible}
+                wireframeVisible={wireframeVisible}
+                landmarkLabelsVisible={landmarksLabelsVisible}
+                setLandmarkLabelsVisible={setLandmarksLabelsVisible}
+              />
+            </div>
+          </div>
+          {/* Canvas fills the rest */}
+          <div className="w-full h-full flex-1 min-h-0">
+            <Canvas
+              style={{ background: '#e0e0e0' }}
+              data-testid="canvas"
+              camera={{
+                position: [0, 0, 5],
+                fov: 50,
+                near: 0.00001,
+                far: 10000,
+              }}
+            >
+              <Suspense fallback={null}>
+                {fileObjectPath && (
+                  <>
+                    <directionalLight position={[0, 10, 0]} intensity={1} />
+                    <GeometryModel
+                      stlUrl={fileObjectPath}
+                      editorState={editorState}
+                      selectedPoints={selectedPoints}
+                      onPointSelect={handlePointSelect}
+                      selectedLandmarkId={selectedLandmarkId}
+                      setSelectedLandmarkId={setSelectedLandmarkId}
+                      landmarksVisible={landmarksVisible}
+                      wireframeVisible={wireframeVisible}
+                      meshOpacity={opacity}
+                      landmarkLabelsVisible={landmarksLabelsVisible}
                     />
-                  </GizmoHelper>
-                </>
-              )}
-            </Suspense>
-            <ArcballControls
-              minDistance={0.001}
-              maxDistance={1000}
-              enableGrid={true}
-              adjustNearFar={true}
-              makeDefault
-            />
-          </Canvas>
+                    <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
+                      <GizmoViewport
+                        axisColors={['#ff3653', '#8adb00', '#2c8fff']}
+                        labelColor="black"
+                      />
+                    </GizmoHelper>
+                  </>
+                )}
+              </Suspense>
+              <ArcballControls
+                minDistance={0.001}
+                maxDistance={1000}
+                enableGrid={true}
+                adjustNearFar={true}
+                makeDefault
+              />
+            </Canvas>
+          </div>
         </div>
       </CardContent>
 
