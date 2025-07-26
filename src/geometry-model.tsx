@@ -208,7 +208,7 @@ export const GeometryModel = ({
         const center = box.getCenter(tempCenter.current)
 
         meshRef.current.position.set(-center.x, -center.y, -center.z)
-        camera.position.set(0, 0, size.length() * 2)
+        camera.position.set(0, 0, size.length() * 1)
         camera.lookAt(0, 0, 0)
         camera.updateProjectionMatrix()
       }
