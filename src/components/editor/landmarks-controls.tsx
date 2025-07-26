@@ -61,15 +61,7 @@ export const LandmarksControls = ({
   }
 
   return (
-    <Card
-      className="absolute"
-      style={{
-        top: 20,
-        right: 20,
-        zIndex: 10,
-        minWidth: '350px',
-      }}
-    >
+    <Card className="w-full max-w-xs sm:min-w-[350px] h-[180px] md:h-[250px] lg:h-[450px]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle data-testid="landmark-control-title">
@@ -77,10 +69,12 @@ export const LandmarksControls = ({
           </CardTitle>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col p-4 overflow-hidden">
         <div className="mb-4 text-sm text-muted-foreground text-center font-medium">
-          Selected landmarks and points.
+          Click on a landmark to select it. Use the delete button to remove
+          selected landmarks. Click on a row to select a landmark.
         </div>
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -92,7 +86,8 @@ export const LandmarksControls = ({
             </TableRow>
           </TableHeader>
         </Table>
-        <ScrollArea className="h-64" type="always">
+
+        <ScrollArea className="flex-1 min-h-24 overflow-auto" type="auto">
           <Table>
             <TableBody>
               {selectedPoints.map((point) => (

@@ -30,7 +30,7 @@ export function App() {
   }
 
   return (
-    <div className="m-8">
+    <div className="h-screen p-8">
       <MeshEditor
         title="Mesh Editor"
         description="InputDescription"
