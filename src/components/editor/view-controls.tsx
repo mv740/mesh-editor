@@ -59,6 +59,7 @@ export const ViewControls = ({
 
   return (
     <Card className="w-full max-w-xs sm:min-w-[350px]">
+    <Card className="w-full max-w-xs sm:min-w-[350px]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle data-testid="view-control-title">View Controls</CardTitle>
