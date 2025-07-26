@@ -61,7 +61,7 @@ export const LandmarksControls = ({
   }
 
   return (
-    <Card className="w-full max-w-xs sm:min-w-[350px] h-[180px] md:h-[250px] lg:h-[450px]">
+    <Card className="w-full max-w-xs sm:min-w-[350px] h-[200px] md:h-[300px] lg:h-[450px]">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle data-testid="landmark-control-title">
@@ -75,20 +75,17 @@ export const LandmarksControls = ({
           selected landmarks. Click on a row to select a landmark.
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>X</TableHead>
-              <TableHead>Y</TableHead>
-              <TableHead>Z</TableHead>
-              <TableHead className="w-[50px]">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-        </Table>
-
-        <ScrollArea className="flex-1 min-h-24 overflow-auto" type="auto">
+        <ScrollArea className="flex-1 min-h-24" type="auto">
           <Table>
+            <TableHeader className="sticky top-0 z-10 bg-background">
+              <TableRow>
+                <TableHead className="w-16 text-center">ID</TableHead>
+                <TableHead className="w-16 text-center">X</TableHead>
+                <TableHead className="w-16 text-center">Y</TableHead>
+                <TableHead className="w-16 text-center">Z</TableHead>
+                <TableHead className="w-[50px] text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {selectedPoints.map((point) => (
                 <TableRow
@@ -98,11 +95,19 @@ export const LandmarksControls = ({
                   }`}
                   onClick={() => handleRowClick(point.id)}
                 >
-                  <TableCell className="font-medium">{point.id}</TableCell>
-                  <TableCell>{point.position.x.toFixed(2)}</TableCell>
-                  <TableCell>{point.position.y.toFixed(2)}</TableCell>
-                  <TableCell>{point.position.z.toFixed(2)}</TableCell>
-                  <TableCell>
+                  <TableCell className="w-16 font-medium text-center">
+                    {point.id}
+                  </TableCell>
+                  <TableCell className="w-16 text-center">
+                    {point.position.x.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="w-16 text-center">
+                    {point.position.y.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="w-16 text-center">
+                    {point.position.z.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="">
                     <Button
                       variant="ghost"
                       size="sm"
