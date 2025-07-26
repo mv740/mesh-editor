@@ -49,7 +49,7 @@ export const ViewControls = ({
       <Button
         variant="secondary"
         size="icon"
-        className="size-10 absolute  right-5 bottom-5 z-50 sm:right-8 sm:bottom-8"
+        className="size-10 absolute  right-5 bottom-5 z-50"
         onClick={() => setIsExpanded(true)}
       >
         <SettingsIcon />
@@ -58,7 +58,6 @@ export const ViewControls = ({
   }
 
   return (
-    <Card className="w-full max-w-xs sm:min-w-[350px]">
     <Card className="w-full max-w-xs sm:min-w-[350px]">
       <CardHeader>
         <div className="flex items-center justify-between">
