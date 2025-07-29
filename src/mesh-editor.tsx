@@ -2,8 +2,10 @@ import { ArcballControls, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import React, { Suspense, useEffect, useRef, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { exportMesh } from './components/editor/geometry-utils'
 import { LandmarksControls } from './components/editor/landmarks-controls'
 import { ViewControls } from './components/editor/view-controls'
+import { Button } from './components/ui/button'
 import {
   Card,
   CardAction,
@@ -14,7 +16,7 @@ import {
   CardTitle,
 } from './components/ui/card'
 import { GeometryModel, type SelectedPoint } from './geometry-model'
-import type { Vector3 } from 'three'
+import type { Scene, Vector3 } from 'three'
 
 interface InputSettings {
   file: File
@@ -37,6 +39,8 @@ export function MeshEditor({
   inputSettings,
   footer,
 }: MeshEditorProps) {
+  const sceneRef = useRef<Scene | null>(null)
+
   const [editorState, setEditorState] = React.useState<EditorState>('view')
   const [fileObjectPath, setFileObjectPath] = React.useState<string | null>(
     null,
@@ -90,7 +94,7 @@ export function MeshEditor({
   return (
     <Card className="dark h-full flex-1 rounded-lg overflow-hidden">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative">
           {/* Left side - Title, Description, Action */}
           <div className="flex flex-col flex-1">
             <CardTitle data-testid="card-title">{title}</CardTitle>
@@ -100,36 +104,46 @@ export function MeshEditor({
             <CardAction>{actionLabel}</CardAction>
           </div>
 
-          {/* Center - ToggleGroup */}
-          <div className="flex justify-center flex-1">
-            <ToggleGroup
-              type="single"
-              value={editorState}
-              onValueChange={(value) => setEditorState(value as EditorState)}
-            >
-              <ToggleGroupItem
-                variant="outline"
-                value="view"
-                aria-label="Toggle view"
-                className="px-6 py-2"
-                data-testid="toggle-view"
+          {/* Center - ToggleGroup absolutely centered */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="pointer-events-auto">
+              <ToggleGroup
+                type="single"
+                value={editorState}
+                onValueChange={(value) => setEditorState(value as EditorState)}
               >
-                Viewer
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                variant="outline"
-                value="landmarks"
-                aria-label="Toggle landmarks"
-                className="px-6 py-2"
-                data-testid="toggle-landmarks"
-              >
-                Landmarks
-              </ToggleGroupItem>
-            </ToggleGroup>
+                <ToggleGroupItem
+                  variant="outline"
+                  value="view"
+                  aria-label="Toggle view"
+                  className="px-6 py-2"
+                  data-testid="toggle-view"
+                >
+                  Viewer
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  variant="outline"
+                  value="landmarks"
+                  aria-label="Toggle landmarks"
+                  className="px-6 py-2"
+                  data-testid="toggle-landmarks"
+                >
+                  Landmarks
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
           </div>
 
-          {/* Right side - Empty spacer for balance */}
-          <div className="flex-1"></div>
+          {/* Right side - Export button */}
+          <div className="flex items-center">
+            <Button
+              variant="success"
+              data-testid="export-button"
+              onClick={() => exportMesh(sceneRef, opacity)}
+            >
+              Export
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -163,19 +177,30 @@ export function MeshEditor({
           {/* Canvas fills the rest */}
           <div className="w-full h-full flex-1 min-h-0">
             <Canvas
-              style={{ background: '#e0e0e0' }}
+              shadows
+              onCreated={({ scene }) => {
+                sceneRef.current = scene
+              }}
+              style={{ background: '#1a1a1a  ' }}
               data-testid="canvas"
               camera={{
                 position: [0, 0, 5],
                 fov: 50,
-                near: 0.00001,
-                far: 10000,
+                near: 0.001,
+                far: 1000,
               }}
+              gl={{ antialias: true }}
             >
               <Suspense fallback={null}>
                 {fileObjectPath && (
                   <>
-                    <directionalLight position={[0, 10, 0]} intensity={1} />
+                    <ambientLight intensity={0.2} />
+                    <directionalLight position={[0, 10, 10]} intensity={0.7} />
+                    <directionalLight
+                      position={[0, -10, -10]}
+                      intensity={0.5}
+                    />
+
                     <GeometryModel
                       stlUrl={fileObjectPath}
                       editorState={editorState}
@@ -188,6 +213,7 @@ export function MeshEditor({
                       meshOpacity={opacity}
                       landmarkLabelsVisible={landmarksLabelsVisible}
                     />
+
                     <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
                       <GizmoViewport
                         axisColors={['#ff3653', '#8adb00', '#2c8fff']}
