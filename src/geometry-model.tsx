@@ -1,12 +1,16 @@
-import { Bvh } from '@react-three/drei'
+import { Bvh, Sphere } from '@react-three/drei'
 import { useLoader, useThree, type ThreeEvent } from '@react-three/fiber'
-import React, { useEffect, useMemo, useRef } from 'react'
-import { CanvasTexture, Vector3, type Mesh } from 'three'
-
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
+import {
+  CanvasTexture,
+  Vector3,
+  type Mesh,
+  type PerspectiveCamera,
+} from 'three'
 import { STLLoader } from 'three/examples/jsm/Addons.js'
 import {
   createLabelCanvas,
-  ThickLine,
+  DefaultLine,
 } from './components/editor/geometry-utils'
 import type { EditorState } from './mesh-editor'
 export interface SelectedPoint {
@@ -84,35 +88,36 @@ const LandmarkWithLabel = ({
     return new CanvasTexture(canvas)
   }, [point.id, selectedLandmarkId === point.id])
 
+  const selectedColor = '#ffeb3b' // softer yellow
+  const sphereColor = '#ff0000' // pure red
+
   return (
     <group key={point.id} name={`landmark-group-${point.id}`}>
-      {/* Landmark sphere - fixed size */}
-      <mesh
+      <Sphere
+        args={[sphereRadius, 64, 64]}
         onDoubleClick={(event) =>
           editorState === 'landmarks'
             ? handleLandmarkClick(event, point)
             : undefined
         }
         name={`landmark-${point.id}`}
-        key={point.id}
         position={[point.position.x, point.position.y, point.position.z]}
       >
-        <sphereGeometry args={[sphereRadius, 16, 16]} />
-        <meshStandardMaterial
-          color={point.id === selectedLandmarkId ? 'yellow' : 'red'}
+        <meshBasicMaterial
+          color={point.id === selectedLandmarkId ? selectedColor : sphereColor}
         />
-      </mesh>
+      </Sphere>
 
       {landmarkLabelsVisible && (
         <>
           {/* Anchor line - using Line2 constructor */}
-          <ThickLine
+          <DefaultLine
             start={point.position}
             end={spriteVector}
             color="#666"
-            linewidth={2}
             name={`landmark-line-${point.id}`}
           />
+
           {/* Text sprite - positioned at fixed distance */}
           <sprite
             onDoubleClick={(event) =>
@@ -159,19 +164,24 @@ export const GeometryModel = ({
   const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
 
   // Pointer move effect here (only once for the whole geometry/model)
-  useEffect(() => {
-    const handlePointerMove = (event: PointerEvent) => {
+  const handlePointerMove = useCallback(
+    (event: PointerEvent) => {
       const rect = gl.domElement.getBoundingClientRect()
       mouse.current = {
         x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
         y: -((event.clientY - rect.top) / rect.height) * 2 + 1,
       }
-    }
+    },
+    [gl.domElement],
+  )
+
+  useEffect(() => {
+    if (!gl.domElement) return
     gl.domElement.addEventListener('pointermove', handlePointerMove)
     return () => {
       gl.domElement.removeEventListener('pointermove', handlePointerMove)
     }
-  }, [gl])
+  }, [gl.domElement, handlePointerMove])
 
   // Handle clicks on the mesh
   const handleMeshClick = (event: ThreeEvent<MouseEvent>) => {
@@ -191,32 +201,41 @@ export const GeometryModel = ({
     return true
   }
 
-  const tempSize = useRef(new Vector3())
-  const tempCenter = useRef(new Vector3())
-
   useEffect(() => {
-    // Only run camera setup once when the model first loads
     if (meshRef.current && !initialCameraSetupRef.current) {
-      // Center the model
       meshRef.current.geometry.center()
 
-      // Auto-fit camera to the model
-      const box = meshRef.current.geometry.boundingBox
-      if (box) {
-        // Create proper Vector3 objects for size and center
-        const size = box.getSize(tempSize.current)
-        const center = box.getCenter(tempCenter.current)
+      // Get bounding sphere
+      meshRef.current.geometry.computeBoundingSphere()
+      const sphere = meshRef.current.geometry.boundingSphere
+      if (sphere) {
+        const { radius } = sphere
+        // Get camera parameters
+        const perspectiveCamera = camera as PerspectiveCamera
+        const fov = perspectiveCamera.fov * (Math.PI / 180) // vertical fov in radians
+        const aspect = perspectiveCamera.aspect
 
-        meshRef.current.position.set(-center.x, -center.y, -center.z)
-        camera.position.set(0, 0, size.length() * 1)
+        // Calculate distance for vertical fit
+        const verticalDist = radius / Math.sin(fov / 2)
+
+        // Calculate distance for horizontal fit
+        const horizontalFov = 2 * Math.atan(Math.tan(fov / 2) * aspect)
+        const horizontalDist = radius / Math.sin(horizontalFov / 2)
+
+        // Use the larger distance to ensure the model fits both vertically and horizontally
+        const distance = Math.max(verticalDist, horizontalDist)
+
+        meshRef.current.position.set(
+          -sphere.center.x,
+          -sphere.center.y,
+          -sphere.center.z,
+        )
+        camera.position.set(0, 0, distance * 1.1) // 1.1 for padding
         camera.lookAt(0, 0, 0)
         camera.updateProjectionMatrix()
       }
 
-      // Mark that initial setup is complete
       initialCameraSetupRef.current = true
-
-      // Call onLoad when the model is loaded and set up
       if (onLoad) {
         onLoad()
       }

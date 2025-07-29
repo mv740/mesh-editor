@@ -39,8 +39,17 @@ describe('GeometryModel', () => {
 
     // contain 1 node
     expect(graph?.length).toBe(1)
-    // mesh has 2 children
+    // group has 2 children
     expect(graph?.[0].children?.length).toBe(2)
+    // first child is a mesh
+    expect(graph?.[0].children?.[0].type).toBe('Mesh')
+    // first child has a name
+    const inputMeshData = renderer.scene.children[0].children[0].instance
+    expect(inputMeshData).toBeDefined()
+    expect(inputMeshData.name).toBe('inputMesh')
+    expect(inputMeshData?.name).toBe('inputMesh')
+    // is visible
+    expect(inputMeshData.visible).toBe(true)
   })
 
   it('should render landmarks when selectedPoints are provided', async () => {
