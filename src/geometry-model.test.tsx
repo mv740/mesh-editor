@@ -3,10 +3,10 @@ import { resolve } from 'node:path'
 import process from 'node:process'
 import ReactThreeTestRenderer from '@react-three/test-renderer'
 import { cleanup } from '@testing-library/react'
-import React from 'react'
 import { Vector3 } from 'three'
 import { afterEach, describe, expect, it } from 'vitest'
-import { GeometryModel, type SelectedPoint } from './geometry-model'
+import { GeometryModel } from './components/editor/geometry-model'
+import type { SelectedPoint } from './components/editor/type'
 
 describe('GeometryModel', () => {
   afterEach(() => {
