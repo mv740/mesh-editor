@@ -1,5 +1,4 @@
 import { Trash2 } from 'lucide-react'
-import React from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-import type { SelectedPoint } from '@/geometry-model'
+import type { SelectedPoint } from '@/components/editor/geometry-model'
 
 type LandmarksControlsProps = {
   selectedPoints: SelectedPoint[]
