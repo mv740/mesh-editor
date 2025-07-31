@@ -1,5 +1,5 @@
 import { Minimize2Icon, SettingsIcon } from 'lucide-react'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -47,12 +47,11 @@ export const ViewControls = ({
   if (!isExpanded) {
     return (
       <Button
-        variant="secondary"
         size="icon"
         className="size-10 absolute  right-5 bottom-5 z-50"
         onClick={() => setIsExpanded(true)}
       >
-        <SettingsIcon />
+        <SettingsIcon className="size-5" />
       </Button>
     )
   }

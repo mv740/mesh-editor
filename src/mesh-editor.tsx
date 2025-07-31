@@ -1,9 +1,11 @@
 import { ArcballControls, GizmoHelper, GizmoViewport } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import React, { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { GeometryModel } from './components/editor/geometry-model'
 import { exportMesh } from './components/editor/geometry-utils'
 import { LandmarksControls } from './components/editor/landmarks-controls'
+import { TransformControls } from './components/editor/transform/transform-controls'
 import { ViewControls } from './components/editor/view-controls'
 import { Button } from './components/ui/button'
 import {
@@ -15,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from './components/ui/card'
-import { GeometryModel, type SelectedPoint } from './geometry-model'
+import type { EditorState, SelectedPoint } from './components/editor/type'
 import type { Scene, Vector3 } from 'three'
 
 interface InputSettings {
@@ -28,9 +30,8 @@ interface MeshEditorProps {
   actionLabel?: string
   inputSettings?: InputSettings
   footer?: React.ReactNode
+  onLandmarksChange?: (landmarks: SelectedPoint[]) => void
 }
-
-export type EditorState = 'view' | 'landmarks'
 
 export function MeshEditor({
   title = 'Mesh Editor',
@@ -38,13 +39,12 @@ export function MeshEditor({
   actionLabel,
   inputSettings,
   footer,
+  onLandmarksChange,
 }: MeshEditorProps) {
   const sceneRef = useRef<Scene | null>(null)
 
-  const [editorState, setEditorState] = React.useState<EditorState>('view')
-  const [fileObjectPath, setFileObjectPath] = React.useState<string | null>(
-    null,
-  )
+  const [editorState, setEditorState] = useState<EditorState>('view')
+  const [fileObjectPath, setFileObjectPath] = useState<string | null>(null)
 
   useEffect(() => {
     if (inputSettings?.file) {
@@ -60,6 +60,14 @@ export function MeshEditor({
   // Landmarks
   const nextPointId = useRef(1)
   const [selectedPoints, setSelectedPoints] = useState<SelectedPoint[]>([])
+
+  // Call onLandmarksChange whenever selectedPoints changes
+  useEffect(() => {
+    if (onLandmarksChange) {
+      onLandmarksChange(selectedPoints)
+    }
+  }, [selectedPoints, onLandmarksChange])
+
   const [selectedLandmarkId, setSelectedLandmarkId] = useState<number | null>(
     null,
   )
@@ -91,6 +99,32 @@ export function MeshEditor({
     setSelectedPoints((prevPoints) => [...prevPoints, newPoint])
   }
 
+  const toggleEditorOptions: Array<{
+    value: EditorState
+    label: string
+    ariaLabel: string
+    testId: string
+  }> = [
+    {
+      value: 'view',
+      label: 'Viewer',
+      ariaLabel: 'Toggle view',
+      testId: 'toggle-view',
+    },
+    {
+      value: 'landmarks',
+      label: 'Landmarks',
+      ariaLabel: 'Toggle landmarks',
+      testId: 'toggle-landmarks',
+    },
+    {
+      value: 'transforms',
+      label: 'Transforms',
+      ariaLabel: 'Toggle transforms',
+      testId: 'toggle-transforms',
+    },
+  ]
+
   return (
     <Card className="dark h-full flex-1 rounded-lg overflow-hidden">
       <CardHeader>
@@ -110,26 +144,24 @@ export function MeshEditor({
               <ToggleGroup
                 type="single"
                 value={editorState}
-                onValueChange={(value) => setEditorState(value as EditorState)}
+                onValueChange={(value: EditorState) => {
+                  if (value) {
+                    setEditorState(value)
+                  }
+                }}
               >
-                <ToggleGroupItem
-                  variant="outline"
-                  value="view"
-                  aria-label="Toggle view"
-                  className="px-6 py-2"
-                  data-testid="toggle-view"
-                >
-                  Viewer
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  variant="outline"
-                  value="landmarks"
-                  aria-label="Toggle landmarks"
-                  className="px-6 py-2"
-                  data-testid="toggle-landmarks"
-                >
-                  Landmarks
-                </ToggleGroupItem>
+                {toggleEditorOptions.map((item) => (
+                  <ToggleGroupItem
+                    key={item.value}
+                    variant="outline"
+                    value={item.value}
+                    aria-label={item.ariaLabel}
+                    className="px-6 py-2"
+                    data-testid={item.testId}
+                  >
+                    {item.label}
+                  </ToggleGroupItem>
+                ))}
               </ToggleGroup>
             </div>
           </div>
@@ -161,6 +193,11 @@ export function MeshEditor({
                 />
               </div>
             )}
+            {editorState === 'transforms' && (
+              <div className="pointer-events-auto">
+                <TransformControls />
+              </div>
+            )}
             <div className="pointer-events-auto ml-auto">
               <ViewControls
                 landmarksVisible={landmarksVisible}
@@ -189,7 +226,7 @@ export function MeshEditor({
                 near: 0.001,
                 far: 1000,
               }}
-              gl={{ antialias: true }}
+              gl={{ antialias: true, localClippingEnabled: true }}
             >
               <Suspense fallback={null}>
                 {fileObjectPath && (
