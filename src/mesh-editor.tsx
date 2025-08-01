@@ -125,6 +125,8 @@ export function MeshEditor({
     },
   ]
 
+  const [meshOutlineVisible, setMeshOutlineVisible] = useState<boolean>(true)
+
   return (
     <Card className="dark h-full flex-1 rounded-lg overflow-hidden">
       <CardHeader>
@@ -184,7 +186,7 @@ export function MeshEditor({
           {/* Overlay for controls */}
           <div className="absolute inset-0 w-full h-full flex flex-wrap z-10 pointer-events-none justify-between p-3">
             {editorState === 'landmarks' && (
-              <div className="pointer-events-auto">
+              <div className="pointer-events-auto h-fit">
                 <LandmarksControls
                   selectedPoints={selectedPoints}
                   setSelectedPoints={setSelectedPoints}
@@ -194,11 +196,14 @@ export function MeshEditor({
               </div>
             )}
             {editorState === 'transforms' && (
-              <div className="pointer-events-auto">
-                <TransformControls />
+              <div className="pointer-events-auto h-fit">
+                <TransformControls
+                  meshOutlineVisible={meshOutlineVisible}
+                  setMeshOutlineVisible={setMeshOutlineVisible}
+                />
               </div>
             )}
-            <div className="pointer-events-auto ml-auto">
+            <div className="pointer-events-auto ml-auto h-fit">
               <ViewControls
                 landmarksVisible={landmarksVisible}
                 setLandmarksVisible={setLandmarksVisible}
@@ -249,6 +254,7 @@ export function MeshEditor({
                       wireframeVisible={wireframeVisible}
                       meshOpacity={opacity}
                       landmarkLabelsVisible={landmarksLabelsVisible}
+                      meshOutlineVisible={meshOutlineVisible}
                     />
 
                     <GizmoHelper alignment="bottom-left" margin={[80, 80]}>

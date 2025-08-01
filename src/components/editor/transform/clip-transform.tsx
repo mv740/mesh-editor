@@ -12,6 +12,16 @@ import {
   type Mesh,
 } from 'three'
 
+type ClipTransformComponentProps = {
+  geometry: BufferGeometry
+  meshRef: React.RefObject<Mesh | null>
+  wireframe: boolean
+  opacity: number
+  color: string
+  handleMeshClick: (event: ThreeEvent<MouseEvent>) => void
+  meshOutlineVisible?: boolean
+}
+
 export const ClipTransformComponent = ({
   geometry,
   meshRef,
@@ -19,14 +29,8 @@ export const ClipTransformComponent = ({
   opacity,
   color,
   handleMeshClick,
-}: {
-  geometry: BufferGeometry
-  meshRef: React.RefObject<Mesh | null>
-  wireframe: boolean
-  opacity: number
-  color: string
-  handleMeshClick: (event: ThreeEvent<MouseEvent>) => void
-}) => {
+  meshOutlineVisible,
+}: ClipTransformComponentProps) => {
   const { gl } = useThree()
   // Clip plane
   const [clipPlane, setClipPlane] = useState(new Plane(new Vector3(0, 0, 1), 0))
@@ -94,11 +98,10 @@ export const ClipTransformComponent = ({
     if (event.button === 1) {
       event.preventDefault()
       setClipPlane((prevPlane) => {
-        // Center of the mesh's bounding box
-        const center = new Vector3(0, 0, 0)
-        if (boundingBox) boundingBox.getCenter(center)
         const newNormal = prevPlane.normal.clone().negate()
-        const newConstant = -center.dot(newNormal)
+        const position = new Vector3()
+        clipPlaneRef.current?.getWorldPosition(position)
+        const newConstant = -position.dot(newNormal)
         return new Plane(newNormal, newConstant)
       })
     }
@@ -168,8 +171,8 @@ export const ClipTransformComponent = ({
   return (
     <>
       {/* The mesh to be transformed */}
-      <ambientLight intensity={0.2} />
-      <directionalLight position={[0, 10, 10]} intensity={0.7} />
+      <ambientLight intensity={1} />
+      <directionalLight position={[0, 10, 10]} intensity={0.8} />
       <TransformControls
         ref={handleTransformRef}
         key={transformKey}
@@ -207,7 +210,7 @@ export const ClipTransformComponent = ({
           clippingPlanes={[clipPlane]}
         />
 
-        <Helper type={BoxHelper} args={['royalblue']} />
+        {meshOutlineVisible && <Helper type={BoxHelper} args={['royalblue']} />}
       </mesh>
       {/* Wireframe mesh without clipping planes */}
       <mesh name="wireframe">
