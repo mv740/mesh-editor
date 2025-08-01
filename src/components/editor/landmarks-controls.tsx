@@ -11,8 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-
-import type { SelectedPoint } from '@/components/editor/geometry-model'
+import type { SelectedPoint } from './type'
 
 type LandmarksControlsProps = {
   selectedPoints: SelectedPoint[]

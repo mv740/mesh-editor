@@ -23,6 +23,7 @@ interface GeometryModelProps {
   meshOpacity?: number
   wireframeVisible?: boolean
   landmarkLabelsVisible?: boolean
+  meshOutlineVisible?: boolean
 }
 
 export const GeometryModel = ({
@@ -37,6 +38,7 @@ export const GeometryModel = ({
   meshOpacity = 1,
   wireframeVisible = false,
   landmarkLabelsVisible = true,
+  meshOutlineVisible = true,
 }: GeometryModelProps) => {
   const geometry = useLoader(STLLoader, stlUrl)
   const meshRef = useRef<Mesh>(null)
@@ -163,6 +165,7 @@ export const GeometryModel = ({
           wireframe={wireframeVisible}
           opacity={meshOpacity}
           color={'grey'}
+          meshOutlineVisible={meshOutlineVisible}
           handleMeshClick={function (event: ThreeEvent<MouseEvent>): void {
             throw new Error('Function not implemented.')
           }}
