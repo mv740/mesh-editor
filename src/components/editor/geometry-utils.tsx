@@ -1,6 +1,6 @@
 import { Sphere } from '@react-three/drei'
 import { saveAs } from 'file-saver'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   BufferGeometry,
   CanvasTexture,
@@ -293,6 +293,7 @@ export const LandmarkWithLabel = ({
   setSelectedLandmarkId?: (id: number | null) => void
   landmarkLabelsVisible?: boolean
 }) => {
+  const [hovered, setHovered] = useState(false)
   const handleLandmarkClick = (
     event: ThreeEvent<MouseEvent>,
     point: SelectedPoint,
@@ -337,6 +338,8 @@ export const LandmarkWithLabel = ({
   return (
     <group key={point.id} name={`landmark-group-${point.id}`}>
       <Sphere
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
         args={[sphereRadius, 64, 64]}
         onDoubleClick={(event) =>
           editorState === 'landmarks'
@@ -346,8 +349,10 @@ export const LandmarkWithLabel = ({
         name={`landmark-${point.id}`}
         position={[point.position.x, point.position.y, point.position.z]}
       >
-        <meshBasicMaterial
+        <meshPhongMaterial
           color={point.id === selectedLandmarkId ? selectedColor : sphereColor}
+          emissive={hovered ? selectedColor : sphereColor}
+          emissiveIntensity={0.5}
         />
       </Sphere>
 
@@ -363,6 +368,8 @@ export const LandmarkWithLabel = ({
 
           {/* Text sprite - positioned at fixed distance */}
           <sprite
+            onPointerOver={() => setHovered(true)}
+            onPointerOut={() => setHovered(false)}
             onDoubleClick={(event) =>
               editorState === 'landmarks'
                 ? handleLandmarkClick(event, point)
