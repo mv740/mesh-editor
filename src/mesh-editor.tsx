@@ -263,6 +263,30 @@ export function MeshEditor({
                         labelColor="black"
                       />
                     </GizmoHelper>
+                    {/* <mesh position={[0, 0, 0]} rotation={[0, 0, 0]}>
+                      <planeGeometry args={[2, 2]} />
+                      <meshBasicMaterial
+                        color="blue"
+                        opacity={0.1}
+                        transparent
+                      />
+                    </mesh> */}
+                    {/* <mesh position={[0, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+                      <planeGeometry args={[2, 2]} />
+                      <meshBasicMaterial
+                        color="red"
+                        opacity={0.1}
+                        transparent
+                      />
+                    </mesh> */}
+                    {/* <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                      <planeGeometry args={[2, 2]} />
+                      <meshBasicMaterial
+                        color="green"
+                        opacity={0.1}
+                        transparent
+                      />
+                    </mesh> */}
                   </>
                 )}
               </Suspense>
