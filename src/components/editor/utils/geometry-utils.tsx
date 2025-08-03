@@ -21,7 +21,7 @@ import {
   type Color,
 } from 'three'
 import { GLTFExporter } from 'three/examples/jsm/Addons.js'
-import type { EditorState, SelectedPoint } from './type'
+import type { EditorState, SelectedPoint } from '../type'
 import type { ThreeEvent } from '@react-three/fiber'
 
 type DefaultLineProps = {
