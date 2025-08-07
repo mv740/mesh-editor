@@ -1,5 +1,5 @@
 import { HistoryIcon, Minimize2Icon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -18,6 +18,19 @@ export const MeshHistoryControls = () => {
     useMeshHistory()
 
   const [isExpanded, setIsExpanded] = useState(false)
+  const isViewingPreviousState =
+    history.length > 1 && currentIndex < history.length - 1
+
+  const activeRowRef = useRef<HTMLTableRowElement>(null)
+
+  useEffect(() => {
+    if (activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+  }, [currentIndex])
 
   if (!isExpanded) {
     return (
@@ -66,6 +79,12 @@ export const MeshHistoryControls = () => {
             Redo
           </Button>
         </div>
+        {isViewingPreviousState && (
+          <div className="mb-2 text-xs text-orange-600 text-center font-semibold">
+            You are viewing a previous state. If you make a change now, all
+            future actions will be deleted.
+          </div>
+        )}
         <div className="mb-4 text-sm text-muted-foreground text-center font-medium">
           Click on a history entry to preview that mesh state.
         </div>
@@ -80,26 +99,30 @@ export const MeshHistoryControls = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...history].reverse().map((entry, idx) => (
-                <TableRow
-                  key={idx}
-                  className={`cursor-pointer hover:bg-muted/50 ${currentIndex === history.length - 1 - idx ? 'bg-muted' : ''}`}
-                  onClick={() => jumpToHistory(history.length - 1 - idx)}
-                >
-                  <TableCell className="w-16 font-medium text-center">
-                    {history.length - idx}
-                  </TableCell>
-                  {/* <TableCell className="w-32 text-center">
-                    {entry.actionType}
-                  </TableCell> */}
-                  <TableCell className="w-32 text-center">
-                    {entry.description || '-'}
-                  </TableCell>
-                  <TableCell className="w-32 text-center">
-                    {entry.timestamp.toLocaleString() || '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {[...history].reverse().map((entry, idx) => {
+                const isActive = currentIndex === history.length - 1 - idx
+                return (
+                  <TableRow
+                    key={idx}
+                    ref={isActive ? activeRowRef : undefined}
+                    className={`cursor-pointer hover:bg-muted/50 ${isActive ? 'bg-muted' : ''}`}
+                    onClick={() => jumpToHistory(history.length - 1 - idx)}
+                  >
+                    <TableCell className="w-16 font-medium text-center">
+                      {history.length - idx}
+                    </TableCell>
+                    {/* <TableCell className="w-32 text-center">
+                      {entry.actionType}
+                    </TableCell> */}
+                    <TableCell className="w-32 text-center">
+                      {entry.description || '-'}
+                    </TableCell>
+                    <TableCell className="w-32 text-center">
+                      {entry.timestamp.toLocaleString() || '-'}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
               {history.length === 0 && (
                 <TableRow>
                   <TableCell
