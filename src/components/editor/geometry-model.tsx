@@ -1,11 +1,17 @@
 import { Bvh } from '@react-three/drei'
 import { useLoader, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useRef } from 'react'
+import {
+  DoubleSide,
+  type Mesh,
+  type PerspectiveCamera,
+  type Vector3,
+} from 'three'
 import { STLLoader } from 'three/examples/jsm/Addons.js'
+import { useMeshHistory } from './history/mesh-history-provider'
 import { ClipTransformComponent } from './transform/clip-transform'
 import { LandmarkWithLabel } from './utils/geometry-utils'
 import type { EditorState, SelectedPoint } from './type'
-import type { Mesh, PerspectiveCamera, Vector3 } from 'three'
 
 interface GeometryModelProps {
   stlUrl: string
@@ -42,6 +48,28 @@ export const GeometryModel = ({
 }: GeometryModelProps) => {
   const geometry = useLoader(STLLoader, stlUrl)
   const meshRef = useRef<Mesh>(null)
+
+  // add mesh to history
+  const { addToHistory, currentState } = useMeshHistory()
+  useEffect(() => {
+    if (meshRef.current) {
+      addToHistory(
+        {
+          selectedPoints: [...selectedPoints],
+          meshGeometry: geometry,
+        },
+        'initialize',
+        'loaded mesh',
+      )
+    }
+  }, [geometry, meshRef])
+
+  useEffect(() => {
+    // load mesh from state if available
+    if (currentState?.meshGeometry && meshRef.current) {
+      meshRef.current.geometry = currentState.meshGeometry
+    }
+  }, [currentState?.meshGeometry, meshRef])
 
   const { camera, gl } = useThree()
 
@@ -86,7 +114,7 @@ export const GeometryModel = ({
 
     return true
   }
-
+  const currentMesh = currentState?.meshGeometry ?? geometry
   // // Clip plane options
   // const [invertClipPlane, setInvertClipPlane] = useState<boolean>(false)
   // // Clip plane
@@ -105,12 +133,13 @@ export const GeometryModel = ({
           editorState === 'landmarks' ? handleMeshClick : undefined
         }
       >
-        <primitive object={geometry} attach="geometry" />
+        <primitive object={currentMesh} attach="geometry" />
         <meshPhongMaterial
           transparent={true}
           visible={true}
           opacity={meshOpacity}
           wireframe={wireframeVisible}
+          side={DoubleSide}
         />
       </mesh>
     </Bvh>
@@ -160,7 +189,7 @@ export const GeometryModel = ({
     <>
       {editorState === 'transforms' ? (
         <ClipTransformComponent
-          geometry={geometry}
+          geometry={currentMesh}
           meshRef={meshRef}
           wireframe={wireframeVisible}
           opacity={meshOpacity}

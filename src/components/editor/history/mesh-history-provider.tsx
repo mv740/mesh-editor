@@ -1,13 +1,20 @@
 import { createContext, useContext, useState } from 'react'
 import type { SelectedPoint } from '../type'
-import type { BufferGeometry } from 'three'
+import type { BufferGeometry, Plane } from 'three'
 
 export type MeshState = {
   selectedPoints: SelectedPoint[]
   meshGeometry: BufferGeometry
+  clipPlane?: Plane
 }
 
-type ActionType = 'addPoint' | 'deletePoint' | 'movePoint' | 'clipTransform'
+type ActionType =
+  | 'initialize'
+  | 'addPoint'
+  | 'deletePoint'
+  | 'movePoint'
+  | 'moveClipPlane'
+  | 'clipTransform'
 
 export type MeshHistoryEntry = {
   state: MeshState
@@ -45,6 +52,7 @@ export const MeshHistoryProvider: React.FC<{ children: React.ReactNode }> = ({
   const defaultState: MeshState = {
     selectedPoints: [],
     meshGeometry: undefined as any,
+    clipPlane: undefined,
   }
   const currentState =
     currentIndex >= 0 ? history[currentIndex].state : defaultState
