@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,6 +48,17 @@ export const LandmarksControls = ({
     }
   }
 
+  const activeRowRef = useRef<HTMLTableRowElement>(null)
+
+  useEffect(() => {
+    if (activeRowRef.current) {
+      activeRowRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+  }, [selectedLandmarkId])
+
   const handleDelete = (pointId: number, event: React.MouseEvent) => {
     event.stopPropagation() // Prevent row click when delete button is clicked
     const updatedPoints = selectedPoints.filter((point) => point.id !== pointId)
@@ -85,38 +97,42 @@ export const LandmarksControls = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedPoints.map((point) => (
-                <TableRow
-                  key={point.id}
-                  className={`cursor-pointer hover:bg-muted/50 ${
-                    selectedLandmarkId === point.id ? 'bg-muted' : ''
-                  }`}
-                  onClick={() => handleRowClick(point.id)}
-                >
-                  <TableCell className="w-16 font-medium text-center">
-                    {point.id}
-                  </TableCell>
-                  <TableCell className="w-16 text-center">
-                    {point.position.x.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="w-16 text-center">
-                    {point.position.y.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="w-16 text-center">
-                    {point.position.z.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleDelete(point.id, e)}
-                      className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {selectedPoints.map((point) => {
+                const isActive = selectedLandmarkId === point.id
+                return (
+                  <TableRow
+                    key={point.id}
+                    ref={isActive ? activeRowRef : undefined}
+                    className={`cursor-pointer hover:bg-muted/50 ${
+                      selectedLandmarkId === point.id ? 'bg-muted' : ''
+                    }`}
+                    onClick={() => handleRowClick(point.id)}
+                  >
+                    <TableCell className="w-16 font-medium text-center">
+                      {point.id}
+                    </TableCell>
+                    <TableCell className="w-16 text-center">
+                      {point.position.x.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="w-16 text-center">
+                      {point.position.y.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="w-16 text-center">
+                      {point.position.z.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDelete(point.id, e)}
+                        className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
               {selectedPoints.length === 0 && (
                 <TableRow>
                   <TableCell
