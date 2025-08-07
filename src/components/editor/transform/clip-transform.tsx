@@ -1,7 +1,7 @@
 import { Helper, TransformControls } from '@react-three/drei'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
 import {
   Box3,
   BoxHelper,
@@ -13,7 +13,8 @@ import {
   type BufferGeometry,
   type Mesh,
 } from 'three'
-
+import { useMeshHistory } from '../history/mesh-history-provider'
+import type { TransformControls as TreeTransformControls } from 'three/addons/controls/TransformControls.js'
 // Helper: get intersection polygon between box and plane
 // Robust box-plane intersection: returns convex polygon of intersection points
 const getBoxPlaneIntersectionPolygon = (box: Box3, plane: Plane): Vector3[] => {
@@ -122,6 +123,34 @@ export const ClipTransformComponent = ({
   // Clip plane
   const [clipPlane, setClipPlane] = useState(new Plane(new Vector3(0, 0, 1), 0))
   const clipPlaneRef = useRef<Mesh | null>(null)
+  const { addToHistory, currentState, currentIndex } = useMeshHistory()
+
+  const prevIndexRef = useRef(currentIndex)
+  useEffect(() => {
+    // Only update mesh from history if currentIndex changed due to undo/redo, not after new state is added
+    if (
+      currentState.clipPlane &&
+      clipPlaneRef.current &&
+      prevIndexRef.current !== currentIndex &&
+      transformRef.current &&
+      transformRef.current.object
+    ) {
+      // move visible plane mesh to match history state
+      clipPlane.normal.copy(currentState.clipPlane.normal)
+      clipPlane.constant = currentState.clipPlane.constant
+
+      // Set mesh position and orientation from history
+      const normal = currentState.clipPlane.normal
+      const constant = currentState.clipPlane.constant
+      const position = normal.clone().multiplyScalar(-constant)
+      transformRef.current.object.position.copy(position)
+      transformRef.current.object.quaternion.setFromUnitVectors(
+        new Vector3(0, 0, 1),
+        normal,
+      )
+    }
+    prevIndexRef.current = currentIndex
+  }, [currentIndex, currentState.clipPlane])
 
   // Compute the orientation for the blue plane to match the clipPlane
   const boundingBox = useMemo(() => {
@@ -146,6 +175,24 @@ export const ClipTransformComponent = ({
       planePositionRef.current.copy(dragCenter)
     }
   })
+
+  const onControlsMouseUp = useCallback(() => {
+    if (transformRef.current && clipPlaneRef.current) {
+      // Apply the transformation
+      const dragCenter = new Vector3()
+      clipPlaneRef.current.getWorldPosition(dragCenter)
+      addToHistory(
+        {
+          selectedPoints: [...currentState.selectedPoints],
+          meshGeometry: currentState.meshGeometry,
+          clipPlane: clipPlane.clone(),
+        },
+        'moveClipPlane',
+        'Move clipping plane',
+      )
+      // Update the clipPlane state
+    }
+  }, [clipPlane, addToHistory, currentState])
 
   // Update the clipping plane constant when the plane mesh moves
   const handleTransformChange = () => {
@@ -174,7 +221,6 @@ export const ClipTransformComponent = ({
   }
 
   const handleCanvasMiddleClick = (event: MouseEvent) => {
-    console.log('Middle click on canvas', event)
     if (event.button === 1) {
       event.preventDefault()
       setClipPlane((prevPlane) => {
@@ -199,10 +245,10 @@ export const ClipTransformComponent = ({
   }, [clipPlane, gl.domElement])
 
   // arrow point the clipped side
-  const transformRef = useRef(null)
+  const transformRef = useRef<TreeTransformControls | null>(null)
   // Attach clamping to TransformControls' internal object
   const handleTransformRef = useCallback(
-    (control: any) => {
+    (control: TreeTransformControls | null) => {
       if (!control) return
       transformRef.current = control
       control.addEventListener('change', () => {
@@ -359,6 +405,7 @@ export const ClipTransformComponent = ({
         ref={handleTransformRef}
         mode={transformMode}
         onObjectChange={handleTransformChange}
+        onMouseUp={onControlsMouseUp}
       >
         {/* Invisible plane mesh for interaction */}
         <mesh ref={clipPlaneRef} position={[0, 0, 0]}>
