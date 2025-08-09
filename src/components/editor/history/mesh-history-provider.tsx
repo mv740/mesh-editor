@@ -5,6 +5,11 @@ import type { BufferGeometry, Plane } from 'three'
 export type MeshState = {
   selectedPoints: SelectedPoint[]
   meshGeometry: BufferGeometry
+  filledHolesGeometry?: {
+    boundaryEdgesMesh: BufferGeometry
+    triangulatedFilledHoleMesh?: BufferGeometry
+  }
+
   clipPlane?: Plane
 }
 
@@ -15,6 +20,7 @@ type ActionType =
   | 'movePoint'
   | 'moveClipPlane'
   | 'clipTransform'
+  | 'fillHoleTransform'
 
 export type MeshHistoryEntry = {
   state: MeshState
