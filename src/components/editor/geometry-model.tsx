@@ -10,7 +10,7 @@ import {
 import { STLLoader } from 'three/examples/jsm/Addons.js'
 import { useMeshHistory } from './history/mesh-history-provider'
 import { ClipTransformComponent } from './transform/clip-transform'
-import { LandmarkWithLabel } from './utils/geometry-utils'
+import { LandmarkWithLabel, SegmentLine2 } from './utils/geometry-utils'
 import type { EditorState, SelectedPoint } from './type'
 
 interface GeometryModelProps {
@@ -30,6 +30,7 @@ interface GeometryModelProps {
   wireframeVisible?: boolean
   landmarkLabelsVisible?: boolean
   meshOutlineVisible?: boolean
+  holesVisible?: boolean
 }
 
 export const GeometryModel = ({
@@ -45,6 +46,7 @@ export const GeometryModel = ({
   wireframeVisible = false,
   landmarkLabelsVisible = true,
   meshOutlineVisible = true,
+  holesVisible = true,
 }: GeometryModelProps) => {
   const geometry = useLoader(STLLoader, stlUrl)
   const meshRef = useRef<Mesh>(null)
@@ -134,13 +136,14 @@ export const GeometryModel = ({
         }
       >
         <primitive object={currentMesh} attach="geometry" />
-        <meshPhongMaterial
+        {/* <meshPhongMaterial
           transparent={true}
           visible={true}
           opacity={meshOpacity}
           wireframe={wireframeVisible}
           side={DoubleSide}
-        />
+        /> */}
+        <meshNormalMaterial />
       </mesh>
     </Bvh>
   )
@@ -202,8 +205,35 @@ export const GeometryModel = ({
       ) : (
         meshComponent
       )}
-      {/* Render selected points */}
 
+      {holesVisible && currentState.filledHolesGeometry?.boundaryEdgesMesh && (
+        <group name="boundary-edges" renderOrder={10}>
+          <SegmentLine2
+            geometry={currentState.filledHolesGeometry?.boundaryEdgesMesh}
+            name="boundary-edges"
+            linewidth={4}
+          />
+          {/* Render triangulated filled holes if available */}
+          {currentState.filledHolesGeometry?.triangulatedFilledHoleMesh && (
+            <mesh
+              renderOrder={10}
+              geometry={
+                currentState.filledHolesGeometry?.triangulatedFilledHoleMesh
+              }
+            >
+              <meshPhongMaterial
+                transparent={false}
+                visible={true}
+                opacity={1}
+                color={'orange'}
+                wireframe={true}
+                side={DoubleSide}
+              />
+            </mesh>
+          )}
+        </group>
+      )}
+      {/* Render selected points */}
       <group name="landmarks">
         {selectedPoints.map(
           (point) =>

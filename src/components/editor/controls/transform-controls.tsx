@@ -1,11 +1,14 @@
-import { Mesh, MeshBasicMaterial } from 'three'
+import { Mesh, MeshBasicMaterial, type LineSegments } from 'three'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import { useMeshHistory } from '../history/mesh-history-provider'
-import { optimizedBvhClip } from '../utils/geometry-utils'
-
+import {
+  createBoundaryEdgesMesh,
+  fillGeometryHoles,
+} from '../utils/fille-holes'
+import { optimizedBvhClip } from '../utils/mesh-operation-utils'
 type TransformControlsProps = {
   meshOutlineVisible: boolean
   setMeshOutlineVisible: (visible: boolean) => void
@@ -15,7 +18,7 @@ export const TransformControls = ({
   meshOutlineVisible,
   setMeshOutlineVisible,
 }: TransformControlsProps) => {
-  const { addToHistory, currentState, currentIndex } = useMeshHistory()
+  const { addToHistory, currentState } = useMeshHistory()
   return (
     <Card className="w-full max-w-xs sm:min-w-[350px] h-[200px] md:h-[300px] lg:h-[450px]">
       <CardHeader>
@@ -38,8 +41,6 @@ export const TransformControls = ({
           variant="outline"
           className="mt-4"
           onClick={() => {
-            // Placeholder for apply transform logic
-            console.log('Apply transform clicked')
             if (currentState.clipPlane && currentState.meshGeometry) {
               const mesh = new Mesh(
                 currentState.meshGeometry,
@@ -63,6 +64,45 @@ export const TransformControls = ({
           }}
         >
           Apply Transform
+        </Button>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => {
+            if (currentState.meshGeometry) {
+              const geometry = currentState.meshGeometry.clone()
+
+              // test
+              const fillTest = fillGeometryHoles(geometry)
+              let edgeMesh: LineSegments | undefined
+              if (fillTest?.boundaryResult) {
+                edgeMesh = createBoundaryEdgesMesh(
+                  fillTest?.boundaryResult,
+                  'red',
+                )
+              }
+              addToHistory(
+                {
+                  ...currentState,
+                  meshGeometry: fillTest?.output ? fillTest.output : undefined,
+                  filledHolesGeometry: {
+                    triangulatedFilledHoleMesh: fillTest
+                      ? fillTest.triangulatedFilledHoleMesh
+                      : undefined,
+                    boundaryEdgesMesh: edgeMesh ? edgeMesh.geometry : undefined,
+                  },
+
+                  clipPlane: currentState.clipPlane,
+                },
+                'fillHoleTransform',
+                fillTest?.boundaryResult
+                  ? 'Applied fill hole transform'
+                  : 'No boundary edges found',
+              )
+            }
+          }}
+        >
+          Apply Fill hole Transform
         </Button>
       </CardContent>
     </Card>

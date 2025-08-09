@@ -15,6 +15,8 @@ type ViewControlsProps = {
   setLandmarksVisible: (visible: boolean) => void
   landmarkLabelsVisible: boolean
   setLandmarkLabelsVisible: (visible: boolean) => void
+  holesVisible: boolean
+  setHolesVisible: (visible: boolean) => void
 }
 
 /**
@@ -41,6 +43,8 @@ export const ViewControls = ({
   setLandmarksVisible,
   landmarkLabelsVisible,
   setLandmarkLabelsVisible,
+  holesVisible,
+  setHolesVisible,
 }: ViewControlsProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -110,6 +114,15 @@ export const ViewControls = ({
               />
             </div>
           )}
+
+          <div className="flex items-center gap-2">
+            <Label htmlFor="holes">Holes:</Label>
+            <Switch
+              id="holes"
+              checked={holesVisible}
+              onCheckedChange={setHolesVisible}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>
