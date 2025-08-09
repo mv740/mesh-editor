@@ -85,6 +85,8 @@ export function MeshEditorInner({
   const [landmarksLabelsVisible, setLandmarksLabelsVisible] =
     useState<boolean>(true)
 
+  const [holesVisible, setHolesVisible] = useState<boolean>(true)
+
   // Call onLandmarksChange whenever selectedPoints changes
   useEffect(() => {
     if (onLandmarksChange && currentState.selectedPoints) {
@@ -247,6 +249,8 @@ export function MeshEditorInner({
                   wireframeVisible={wireframeVisible}
                   landmarkLabelsVisible={landmarksLabelsVisible}
                   setLandmarkLabelsVisible={setLandmarksLabelsVisible}
+                  holesVisible={holesVisible}
+                  setHolesVisible={setHolesVisible}
                 />
                 <MeshHistoryControls />
               </div>
@@ -291,6 +295,7 @@ export function MeshEditorInner({
                       meshOpacity={opacity}
                       landmarkLabelsVisible={landmarksLabelsVisible}
                       meshOutlineVisible={meshOutlineVisible}
+                      holesVisible={holesVisible}
                     />
 
                     <GizmoHelper alignment="bottom-left" margin={[80, 80]}>
