@@ -25,6 +25,7 @@ import {
   LineMaterial,
   LineSegments2,
   LineSegmentsGeometry,
+  STLExporter,
 } from 'three/examples/jsm/Addons.js'
 import type { EditorState, SelectedPoint } from '../type'
 import type { ThreeEvent } from '@react-three/fiber'
@@ -200,9 +201,11 @@ export const createSphereMarker = (
 export const exportMesh = (
   sceneRef: React.RefObject<Scene | null>,
   opacity: number,
+  filetype?: 'glb' | 'gltf' | 'stl',
 ) => {
   if (sceneRef.current) {
     const gltfExporter = new GLTFExporter()
+    const stlExporter = new STLExporter()
     const exportScene = new Scene()
 
     sceneRef.current.traverse((object) => {
@@ -281,28 +284,41 @@ export const exportMesh = (
     })
 
     if (exportScene.children.length > 0) {
-      gltfExporter.parse(
-        exportScene,
-        (gltf: ArrayBuffer | { [key: string]: unknown }) => {
-          if (gltf instanceof ArrayBuffer) {
-            // Handle binary format
-            const blob = new Blob([gltf], {
-              type: 'application/octet-stream',
-            })
-            saveFile(blob, 'mesh.glb')
-          } else {
-            // Handle JSON format
-            const blob = new Blob([JSON.stringify(gltf)], {
-              type: 'application/json',
-            })
-            saveFile(blob, 'mesh.gltf')
-          }
-        },
-        (error) => {
-          console.error('Error exporting GLTF:', error)
-        },
-        { binary: true },
-      )
+      if (filetype === 'stl') {
+        const options = { binary: true } // Or { binary: false } for ASCII
+
+        const result = stlExporter.parse(exportScene, options) as DataView
+        // Get the ArrayBuffer from DataView
+        const arrayBuffer = result.buffer.slice(0) as ArrayBuffer
+
+        const blob = new Blob([arrayBuffer], {
+          type: 'application/octet-stream',
+        })
+        saveFile(blob, 'mesh.stl')
+      } else {
+        gltfExporter.parse(
+          exportScene,
+          (gltf: ArrayBuffer | { [key: string]: unknown }) => {
+            if (gltf instanceof ArrayBuffer) {
+              // Handle binary format
+              const blob = new Blob([gltf], {
+                type: 'application/octet-stream',
+              })
+              saveFile(blob, 'mesh.glb')
+            } else {
+              // Handle JSON format
+              const blob = new Blob([JSON.stringify(gltf)], {
+                type: 'application/json',
+              })
+              saveFile(blob, 'mesh.gltf')
+            }
+          },
+          (error) => {
+            console.error('Error exporting GLTF:', error)
+          },
+          { binary: true },
+        )
+      }
     }
   }
 }
