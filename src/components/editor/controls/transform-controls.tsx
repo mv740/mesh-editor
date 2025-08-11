@@ -73,7 +73,7 @@ export const TransformControls = ({
               const geometry = currentState.meshGeometry.clone()
 
               // test
-              const fillTest = fillGeometryHoles(geometry)
+              const fillTest = fillGeometryHoles(geometry, 1e-5, 0.5)
               let edgeMesh: LineSegments | undefined
               if (fillTest?.boundaryResult) {
                 edgeMesh = createBoundaryEdgesMesh(
@@ -81,6 +81,7 @@ export const TransformControls = ({
                   'red',
                 )
               }
+
               addToHistory(
                 {
                   ...currentState,
