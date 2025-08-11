@@ -201,7 +201,14 @@ export function MeshEditorInner({
               data-testid="export-button"
               onClick={() => exportMesh(sceneRef, opacity)}
             >
-              Export
+              Export GLB
+            </Button>
+            <Button
+              variant="success"
+              data-testid="export-button"
+              onClick={() => exportMesh(sceneRef, opacity, 'stl')}
+            >
+              Export STL
             </Button>
           </div>
         </div>
