@@ -261,3 +261,41 @@ export const optimizedBvhClip = (
 
   return clippedMesh
 }
+
+export const filterPointsByPlane = (
+  points: Vector3[],
+  plane: Plane,
+  options: { epsilon?: number; keepOnPlane?: boolean } = {},
+): Vector3[] => {
+  const { epsilon = 0, keepOnPlane = true } = options
+  let cmp: (d: number) => boolean
+  if (keepOnPlane) cmp = (d: number) => d >= -epsilon
+  else cmp = (d: number) => d > epsilon
+  return points.filter((p) => cmp(plane.distanceToPoint(p)))
+}
+
+/**
+ * Partition an array of items by a plane. Useful for landmarks (objects)
+ * where you need to remove items whose positions are on the clipped side.
+ *
+ * Example: const { kept, removed } = partitionPointsByPlane(landmarks, l => l.position, plane)
+ */
+export function partitionPointsByPlane<T>(
+  items: T[],
+  getPoint: (item: T) => Vector3,
+  plane: Plane,
+  epsilon = 0,
+  keepOnPlane = true,
+): { kept: T[]; removed: T[] } {
+  const kept: T[] = []
+  const removed: T[] = []
+  let cmp: (d: number) => boolean
+  if (keepOnPlane) cmp = (d: number) => d >= -epsilon
+  else cmp = (d: number) => d > epsilon
+  for (const item of items) {
+    const pt = getPoint(item)
+    if (cmp(plane.distanceToPoint(pt))) kept.push(item)
+    else removed.push(item)
+  }
+  return { kept, removed }
+}

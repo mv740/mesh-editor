@@ -57,6 +57,7 @@ export const GeometryModel = ({
     if (meshRef.current) {
       addToHistory(
         {
+          ...currentState,
           selectedPoints: [...selectedPoints],
           meshGeometry: geometry,
         },
