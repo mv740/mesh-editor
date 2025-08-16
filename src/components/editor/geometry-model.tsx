@@ -117,15 +117,7 @@ export const GeometryModel = ({
     return true
   }
   const currentMesh = currentState?.meshGeometry ?? geometry
-  // // Clip plane options
-  // const [invertClipPlane, setInvertClipPlane] = useState<boolean>(false)
-  // // Clip plane
-  // const [clipPlane, setClipPlane] = useState(new Plane(new Vector3(0, 0, 1), 0))
-  // const clipPlaneRef = useRef<Mesh | null>(null)
 
-  // TODO: Handle the clip plane changes
-  // right double click to invert the clip plane
-  // right click to change the plane axis (x => y => z)
   const meshComponent = (
     <Bvh>
       <mesh
@@ -136,14 +128,14 @@ export const GeometryModel = ({
         }
       >
         <primitive object={currentMesh} attach="geometry" />
-        {/* <meshPhongMaterial
+        <meshPhongMaterial
           transparent={true}
           visible={true}
           opacity={meshOpacity}
           wireframe={wireframeVisible}
           side={DoubleSide}
-        /> */}
-        <meshNormalMaterial />
+        />
+        {/* <meshNormalMaterial /> */}
       </mesh>
     </Bvh>
   )
