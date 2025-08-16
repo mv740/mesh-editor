@@ -195,7 +195,7 @@ export function MeshEditorInner({
           </div>
 
           {/* Right side - Export button */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Button
               variant="success"
               data-testid="export-button"

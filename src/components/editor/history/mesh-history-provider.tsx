@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react'
+import { initialClipPlane } from '../transform/clip-transform'
 import type { SelectedPoint } from '../type'
 import type { BufferGeometry, Plane } from 'three'
 
@@ -58,7 +59,7 @@ export const MeshHistoryProvider: React.FC<{ children: React.ReactNode }> = ({
   const defaultState: MeshState = {
     selectedPoints: [],
     meshGeometry: undefined as any,
-    clipPlane: undefined,
+    clipPlane: initialClipPlane,
   }
   const currentState =
     currentIndex >= 0 ? history[currentIndex].state : defaultState
