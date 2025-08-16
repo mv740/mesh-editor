@@ -6,7 +6,7 @@ export type MeshState = {
   selectedPoints: SelectedPoint[]
   meshGeometry: BufferGeometry
   filledHolesGeometry?: {
-    boundaryEdgesMesh: BufferGeometry
+    boundaryEdgesMesh?: BufferGeometry
     triangulatedFilledHoleMesh?: BufferGeometry
   }
 
