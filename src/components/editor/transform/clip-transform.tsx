@@ -107,6 +107,8 @@ type ClipTransformComponentProps = {
   meshOutlineVisible?: boolean
 }
 
+export const initialClipPlane = new Plane(new Vector3(0, 0, 1), 0)
+
 export const ClipTransformComponent = ({
   geometry,
   meshRef,
@@ -121,7 +123,7 @@ export const ClipTransformComponent = ({
     'translate',
   )
   // Clip plane
-  const [clipPlane, setClipPlane] = useState(new Plane(new Vector3(0, 0, 1), 0))
+  const [clipPlane, setClipPlane] = useState(initialClipPlane)
   const clipPlaneRef = useRef<Mesh | null>(null)
   const { addToHistory, currentState, currentIndex } = useMeshHistory()
 
