@@ -1,14 +1,16 @@
+import { Bandage, Scissors } from 'lucide-react'
 import { Mesh, MeshBasicMaterial, type LineSegments } from 'three'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import { useMeshHistory } from '../history/mesh-history-provider'
+import { optimizedBvhClip } from '../utils/clip'
 import {
   createBoundaryEdgesMesh,
   fillGeometryHoles,
 } from '../utils/fille-holes'
-import { optimizedBvhClip } from '../utils/mesh-operation-utils'
+
 type TransformControlsProps = {
   meshOutlineVisible: boolean
   setMeshOutlineVisible: (visible: boolean) => void
@@ -63,7 +65,7 @@ export const TransformControls = ({
             }
           }}
         >
-          Apply Transform
+          <Scissors /> Apply Clip
         </Button>
         <Button
           variant="outline"
@@ -85,7 +87,7 @@ export const TransformControls = ({
               addToHistory(
                 {
                   ...currentState,
-                  meshGeometry: fillTest?.output ? fillTest.output : undefined,
+                  meshGeometry: fillTest.output,
                   filledHolesGeometry: {
                     triangulatedFilledHoleMesh: fillTest
                       ? fillTest.triangulatedFilledHoleMesh
@@ -103,7 +105,7 @@ export const TransformControls = ({
             }
           }}
         >
-          Apply Fill hole Transform
+          <Bandage /> Apply Fill hole
         </Button>
       </CardContent>
     </Card>
