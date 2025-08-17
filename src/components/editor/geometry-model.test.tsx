@@ -5,8 +5,9 @@ import ReactThreeTestRenderer from '@react-three/test-renderer'
 import { cleanup } from '@testing-library/react'
 import { Vector3 } from 'three'
 import { afterEach, describe, expect, it } from 'vitest'
-import { GeometryModel } from './components/editor/geometry-model'
-import type { SelectedPoint } from './components/editor/type'
+import { GeometryModel } from '@/components/editor/geometry-model'
+import { MeshHistoryProvider } from '@/components/editor/history/mesh-history-provider'
+import type { SelectedPoint } from '@/components/editor/type'
 
 describe('GeometryModel', () => {
   afterEach(() => {
@@ -26,7 +27,9 @@ describe('GeometryModel', () => {
     // Using data URL instead of blob URL'
 
     const renderer = await ReactThreeTestRenderer.create(
-      <GeometryModel stlUrl={dataUrl} />,
+      <MeshHistoryProvider>
+        <GeometryModel stlUrl={dataUrl} />
+      </MeshHistoryProvider>,
     )
 
     // assertions using the TestInstance & Scene Graph
@@ -37,14 +40,19 @@ describe('GeometryModel', () => {
 
     expect(graph).toBeDefined()
 
-    // contain 1 node
-    expect(graph?.length).toBe(1)
-    // group has 2 children
-    expect(graph?.[0].children?.length).toBe(2)
+    const bvhNode = renderer.scene.find(
+      (child) => child.props?.name === 'bvh-group',
+    ) as any
+    expect(bvhNode).toBeDefined()
+    expect(bvhNode.type).toBe('Group')
+    expect(bvhNode.children?.length).toBe(1)
     // first child is a mesh
-    expect(graph?.[0].children?.[0].type).toBe('Mesh')
-    // first child has a name
-    const inputMeshData = renderer.scene.children[0].children[0].instance
+    expect(bvhNode.children?.[0].type).toBe('Mesh')
+
+    // Find the actual mesh instance by name
+    const inputMeshData = renderer.scene.find(
+      (child) => child.props?.name === 'inputMesh',
+    )?.instance
     expect(inputMeshData).toBeDefined()
     expect(inputMeshData.name).toBe('inputMesh')
     expect(inputMeshData?.name).toBe('inputMesh')
@@ -87,20 +95,24 @@ describe('GeometryModel', () => {
     ]
 
     const renderer = await ReactThreeTestRenderer.create(
-      <GeometryModel
-        stlUrl={dataUrl}
-        selectedPoints={selectedPoints}
-        editorState={'landmarks'}
-        selectedLandmarkId={1}
-        landmarksVisible={true}
-      />,
+      <MeshHistoryProvider>
+        <GeometryModel
+          stlUrl={dataUrl}
+          selectedPoints={selectedPoints}
+          editorState={'landmarks'}
+          selectedLandmarkId={1}
+          landmarksVisible={true}
+        />
+        ,
+      </MeshHistoryProvider>,
     )
 
     // Wait for the model to load
-    await renderer.advanceFrames(10, 1000)
+    await renderer.advanceFrames(50, 1000)
 
-    const landmarksGroup = renderer.scene.children[0].find(
-      (child) => child.props.name === 'landmarks',
+    // The `landmarks` group is rendered at the top-level of the scene fragment.
+    const landmarksGroup = renderer.scene.find(
+      (child) => child.props?.name === 'landmarks',
     )
     const landmarkItems = landmarksGroup?.children
     expect(landmarkItems).toBeDefined()
@@ -151,13 +163,15 @@ describe('GeometryModel', () => {
     }
 
     const renderer = await ReactThreeTestRenderer.create(
-      <GeometryModel
-        stlUrl={dataUrl}
-        selectedPoints={selectedPoints}
-        onPointSelect={handlePointSelect}
-        editorState={'landmarks'}
-        landmarksVisible={true}
-      />,
+      <MeshHistoryProvider>
+        <GeometryModel
+          stlUrl={dataUrl}
+          selectedPoints={selectedPoints}
+          onPointSelect={handlePointSelect}
+          editorState={'landmarks'}
+          landmarksVisible={true}
+        />
+      </MeshHistoryProvider>,
     )
 
     await renderer.advanceFrames(10, 1000)

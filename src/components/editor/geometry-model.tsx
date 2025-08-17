@@ -120,7 +120,7 @@ export const GeometryModel = ({
   const currentMesh = currentState?.meshGeometry ?? geometry
 
   const meshComponent = (
-    <Bvh>
+    <Bvh name="bvh-group">
       <mesh
         name="inputMesh"
         ref={meshRef}
