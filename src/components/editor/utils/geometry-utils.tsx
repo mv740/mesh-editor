@@ -1,5 +1,4 @@
 import { Sphere } from '@react-three/drei'
-import { saveAs } from 'file-saver'
 import { useMemo, useState } from 'react'
 import {
   BufferGeometry,
@@ -28,6 +27,7 @@ import {
   STLExporter,
 } from 'three/examples/jsm/Addons.js'
 import type { EditorState, SelectedPoint } from '../type'
+import { saveFile } from './file-utils'
 import type { ThreeEvent } from '@react-three/fiber'
 
 type DefaultLineProps = {
@@ -163,16 +163,6 @@ export const createLabelCanvas = (
   context.fillText(text, sizeW * 0.5 - textOffsetCenter, sizeH * 0.7)
 
   return canvas
-}
-
-/**
- * Saves a file using the provided Blob and filename.
- *
- * @param blob The Blob object to be saved
- * @param filename The name of the file to be saved
- */
-export const saveFile = (blob: Blob, filename: string) => {
-  saveAs(blob, filename)
 }
 
 // useful for debugging

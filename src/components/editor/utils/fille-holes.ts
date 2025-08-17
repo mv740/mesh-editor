@@ -49,7 +49,7 @@ function computeLoopNormal(loopVerts: Vector3[]): Vector3 {
  *   - `logicalIndex`: An array mapping each original vertex index to its logical index.
  *   - `logicalToPosition`: A map from logical index to the corresponding vertex position (Vector3).
  */
-function findPositionBasedBoundaryEdges(
+export function findPositionBasedBoundaryEdges(
   geometry: BufferGeometry,
   tolerance = 1e-5,
 ): BoundaryResult {
@@ -382,12 +382,18 @@ export function fillGeometryHoles(
   tolerance = 1e-5,
   steinerDensity = 0.7,
 ): FillHoleResult {
+  // Require input geometry to be indexed. Do not auto-convert here.
+  if (!geometry.index) {
+    throw new Error(
+      'fillGeometryHoles requires an indexed geometry (geometry.index must be present)',
+    )
+  }
   const boundaryResult = findPositionBasedBoundaryEdges(geometry, tolerance)
   if (!boundaryResult.boundaryEdges.length) return { output: geometry }
   const loops = findBoundaryLoops(boundaryResult.boundaryEdges)
-  console.log('Number of boundary loops:', loops.length)
+  console.debug('Number of boundary loops:', loops.length)
   loops.forEach((loop, i) => {
-    console.log(`Loop ${i}: length ${loop.length}`)
+    console.debug(`Loop ${i}: length ${loop.length}`)
   })
 
   if (loops.length === 0) return { output: geometry, boundaryResult, loops }
@@ -397,6 +403,7 @@ export function fillGeometryHoles(
     steinerDensity,
   )
 
+  geometry.computeVertexNormals()
   fillGeometry.computeVertexNormals()
 
   // Merge the original geometry and the patch.
