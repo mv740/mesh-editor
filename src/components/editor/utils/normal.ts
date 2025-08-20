@@ -83,9 +83,7 @@ export function computeConsistentNormals(
   }
 
   // Build new index array (remap old indices -> new)
-  const oldIndexAttr = geometry.index
-    ? (geometry.index.array as ArrayLike<number>)
-    : null
+  const oldIndexAttr = geometry.index ? geometry.index.array : null
   let newIndexArray: Uint32Array
   if (oldIndexAttr) {
     newIndexArray = new Uint32Array(oldIndexAttr.length)
@@ -116,13 +114,14 @@ export function computeConsistentNormals(
   geometry.setIndex(new BufferAttribute(newIndexArray, 1))
 
   // 2) Build face list and edge adjacency
-  const pos = geometry.attributes.position.array as ArrayLike<number>
-  const idx = geometry.index!.array as ArrayLike<number>
+  const idx = geometry.index!.array
   if (idx.length % 3 !== 0)
     throw new Error('index length is not a multiple of 3')
 
   const faceCount = idx.length / 3
-  const faces: Array<[number, number, number]> = new Array(faceCount)
+  const faces: Array<[number, number, number]> = Array.from({
+    length: faceCount,
+  })
   for (let f = 0; f < faceCount; f++) {
     faces[f] = [idx[f * 3], idx[f * 3 + 1], idx[f * 3 + 2]]
   }
@@ -233,18 +232,32 @@ export function computeConsistentNormals(
     vertexNormals[ic * 3 + 2] += faceNormal.z
   }
 
-  // normalize vertex normals
+  // normalize vertex normals and count zero-length normals
+  let zeroNormalCount = 0
   for (let i = 0; i < uniqueCount; i++) {
     const nx = vertexNormals[i * 3]
     const ny = vertexNormals[i * 3 + 1]
     const nz = vertexNormals[i * 3 + 2]
-    const len = Math.hypot(nx, ny, nz) || 1
-    vertexNormals[i * 3] = nx / len
-    vertexNormals[i * 3 + 1] = ny / len
-    vertexNormals[i * 3 + 2] = nz / len
+    const len = Math.hypot(nx, ny, nz)
+    if (len === 0) {
+      // Assign a deterministic fallback normal to avoid all-zero normals
+      vertexNormals[i * 3] = 0
+      vertexNormals[i * 3 + 1] = 0
+      vertexNormals[i * 3 + 2] = 1
+      zeroNormalCount++
+    } else {
+      vertexNormals[i * 3] = nx / len
+      vertexNormals[i * 3 + 1] = ny / len
+      vertexNormals[i * 3 + 2] = nz / len
+    }
   }
 
   geometry.setAttribute('normal', new Float32BufferAttribute(vertexNormals, 3))
+  if (zeroNormalCount > 0) {
+    console.warn(
+      `[computeConsistentNormals] ${zeroNormalCount} vertices had zero-length normals; a fallback normal was assigned.`,
+    )
+  }
 
   // 5) Optionally ensure normals point outward (flip all faces + invert normals if needed)
   if (flipIfInward) {
@@ -252,6 +265,9 @@ export function computeConsistentNormals(
     const bb = geometry.boundingBox ?? new Box3()
     const center = new Vector3()
     bb.getCenter(center)
+
+    // reuse centroid to avoid per-face allocation
+    const centroid = new Vector3()
 
     let totalDot = 0
     for (let f = 0; f < faceCount; f++) {
@@ -261,7 +277,7 @@ export function computeConsistentNormals(
       tmpA.fromArray(posArr as number[], ia * 3)
       tmpB.fromArray(posArr as number[], ib * 3)
       tmpC.fromArray(posArr as number[], ic * 3)
-      const centroid = new Vector3()
+      centroid
         .addVectors(tmpA, tmpB)
         .add(tmpC)
         .multiplyScalar(1 / 3)
