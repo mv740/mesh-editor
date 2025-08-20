@@ -1,7 +1,6 @@
 import { Helper, TransformControls } from '@react-three/drei'
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-
 import {
   Box3,
   BoxHelper,
@@ -14,7 +13,8 @@ import {
   type Mesh,
 } from 'three'
 import { useMeshHistory } from '../history/mesh-history-provider'
-import type { TransformControls as TreeTransformControls } from 'three/addons/controls/TransformControls.js'
+import type { TransformControls as ThreeTransformControls } from 'three/addons/controls/TransformControls.js'
+
 // Helper: get intersection polygon between box and plane
 // Robust box-plane intersection: returns convex polygon of intersection points
 const getBoxPlaneIntersectionPolygon = (box: Box3, plane: Plane): Vector3[] => {
@@ -103,7 +103,6 @@ type ClipTransformComponentProps = {
   wireframe: boolean
   opacity: number
   color: string
-  handleMeshClick: (event: ThreeEvent<MouseEvent>) => void
   meshOutlineVisible?: boolean
 }
 
@@ -115,7 +114,6 @@ export const ClipTransformComponent = ({
   wireframe,
   opacity,
   color,
-  handleMeshClick,
   meshOutlineVisible,
 }: ClipTransformComponentProps) => {
   const { gl } = useThree()
@@ -247,10 +245,10 @@ export const ClipTransformComponent = ({
   }, [clipPlane, gl.domElement])
 
   // arrow point the clipped side
-  const transformRef = useRef<TreeTransformControls | null>(null)
+  const transformRef = useRef<ThreeTransformControls | null>(null)
   // Attach clamping to TransformControls' internal object
   const handleTransformRef = useCallback(
-    (control: TreeTransformControls | null) => {
+    (control: ThreeTransformControls | null) => {
       if (!control) return
       transformRef.current = control
       control.addEventListener('change', () => {
@@ -404,6 +402,7 @@ export const ClipTransformComponent = ({
       {/* The mesh to be transformed */}
 
       <TransformControls
+        //@ts-ignore
         ref={handleTransformRef}
         mode={transformMode}
         onObjectChange={handleTransformChange}
@@ -417,7 +416,7 @@ export const ClipTransformComponent = ({
       </TransformControls>
 
       {/* The actual mesh with clipping applied */}
-      <mesh name="inputMesh" ref={meshRef} onDoubleClick={handleMeshClick}>
+      <mesh name="inputMesh" ref={meshRef}>
         <primitive object={geometry} attach="geometry" />
         <meshStandardMaterial
           wireframe={wireframe}
