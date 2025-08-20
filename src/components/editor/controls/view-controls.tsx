@@ -20,19 +20,19 @@ type ViewControlsProps = {
 }
 
 /**
- * Renders view controls for adjusting the view of the mesh editor.
+ * A React component that renders a set of view controls for a mesh editor.
  *
- * @component
- * @param {object} props - The component props
- * @param {boolean} props.wireframeVisible - Indicates whether wireframe is currently visible
- * @param {Function} props.setWireframeVisible - Callback to toggle wireframe visibility
- * @param {number} props.opacity - Current opacity value (0-1)
- * @param {Function} props.setOpacity - Callback to update opacity value
- * @param {boolean} props.landmarksVisible - Indicates whether landmarks are currently visible
- * @param {Function} props.setLandmarksVisible - Callback to toggle landmarks visibility
- * @param {boolean} props.landmarkLabelsVisible - Indicates whether landmark labels are currently visible
- * @param {Function} props.setLandmarkLabelsVisible - Callback to toggle landmark labels visibility
- * @returns {React.ReactElement} A card with switches and slider for view control settings
+ *
+ * @param wireframeVisible - Boolean indicating if the wireframe is visible.
+ * @param setWireframeVisible - Function to set wireframe visibility.
+ * @param opacity - Number representing the current opacity value.
+ * @param setOpacity - Function to set the opacity value.
+ * @param landmarksVisible - Boolean indicating if landmarks are visible.
+ * @param setLandmarksVisible - Function to set landmarks visibility.
+ * @param landmarkLabelsVisible - Boolean indicating if landmark labels are visible.
+ * @param setLandmarkLabelsVisible - Function to set landmark labels visibility.
+ * @param holesVisible - Boolean indicating if holes are visible.
+ * @param setHolesVisible - Function to set holes visibility.
  */
 export const ViewControls = ({
   wireframeVisible,

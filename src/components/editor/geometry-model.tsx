@@ -191,9 +191,6 @@ export const GeometryModel = ({
           opacity={meshOpacity}
           color={'grey'}
           meshOutlineVisible={meshOutlineVisible}
-          handleMeshClick={function (event: ThreeEvent<MouseEvent>): void {
-            throw new Error('Function not implemented.')
-          }}
         />
       ) : (
         meshComponent

@@ -74,7 +74,6 @@ export const TransformControls = ({
           <Button
             variant="outline"
             onClick={() => {
-              console.log('Clipping mesh...', currentState)
               if (currentState.clipPlane && currentState.meshGeometry) {
                 const currentStateLandmarks = currentState.selectedPoints
                 if (currentStateLandmarks.length > 0) {
