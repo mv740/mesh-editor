@@ -35,7 +35,7 @@ export const TransformControls = ({
 
   // Per-feature settings (separate settings for clip, fill hole, etc.)
   const [showFillSettings, setShowFillSettings] = useState(false)
-  const [fillSteinerDensity, setFillSteinerDensity] = useState<number>(0.5)
+  const [fillSteinerDensity, setFillSteinerDensity] = useState<number>(0.8)
   const [fillMaxHoleArea, setFillMaxHoleArea] = useState<number | undefined>(
     0.05,
   )
@@ -284,6 +284,7 @@ export const TransformControls = ({
                   fillDebugOnlyBoundary,
                   fillSplitAngleDeg,
                   fillWeldEnabled ? fillWeldTolerance : 0,
+                  true, // disable laplacian smoothing for now (can distort the mesh
                 )
                 let edgeMesh: LineSegments | undefined
                 if (fillTest?.boundaryResult) {
