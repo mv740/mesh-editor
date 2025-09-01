@@ -148,7 +148,9 @@ export const TransformControls = ({
                 const geometry = currentState.meshGeometry.clone()
 
                 // test
-                const fillTest = fillGeometryHoles(geometry, 1e-5, 0.5)
+                const fillTest = fillGeometryHoles(geometry, 1e-5, 0.5, {
+                  maxHoleArea: 0.05,
+                })
                 let edgeMesh: LineSegments | undefined
                 if (fillTest?.boundaryResult) {
                   edgeMesh = createBoundaryEdgesMesh(
