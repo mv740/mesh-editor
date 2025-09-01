@@ -22,12 +22,12 @@ export type BoundaryResult = {
 }
 
 function computeLoopNormal(loopVerts: Vector3[]): Vector3 {
-  let nx = 0,
-    ny = 0,
-    nz = 0
+  let nx = 0
+  let ny = 0
+  let nz = 0
   for (let i = 0; i < loopVerts.length; i++) {
-    const a = loopVerts[i],
-      b = loopVerts[(i + 1) % loopVerts.length]
+    const a = loopVerts[i]
+    const b = loopVerts[(i + 1) % loopVerts.length]
     nx += (a.y - b.y) * (a.z + b.z)
     ny += (a.z - b.z) * (a.x + b.x)
     nz += (a.x - b.x) * (a.y + b.y)
@@ -60,9 +60,9 @@ export function findPositionBasedBoundaryEdges(
   let nextIndex = 0
 
   for (let i = 0; i < posAttr.count; i++) {
-    const x = posAttr.getX(i),
-      y = posAttr.getY(i),
-      z = posAttr.getZ(i)
+    const x = posAttr.getX(i)
+    const y = posAttr.getY(i)
+    const z = posAttr.getZ(i)
     const key = `${Math.round(x / tolerance)}_${Math.round(y / tolerance)}_${Math.round(z / tolerance)}`
     if (!vertexMap.has(key)) {
       vertexMap.set(key, nextIndex)
@@ -116,6 +116,7 @@ export function findPositionBasedBoundaryEdges(
 export function findBoundaryLoops(
   boundaryEdges: [number, number][],
 ): number[][] {
+  // Build a mutable adjacency map (undirected)
   const adj = new Map<number, Set<number>>()
   for (const [a, b] of boundaryEdges) {
     if (!adj.has(a)) adj.set(a, new Set())
@@ -124,36 +125,75 @@ export function findBoundaryLoops(
     adj.get(b)!.add(a)
   }
 
-  const edgeKey = (u: number, v: number) => (u < v ? `${u}_${v}` : `${v}_${u}`)
-  const visited = new Set<string>()
+  const removeEdge = (u: number, v: number) => {
+    const s = adj.get(u)
+    if (!s) return
+    s.delete(v)
+    if (s.size === 0) adj.delete(u)
+  }
+
   const loops: number[][] = []
 
-  for (const [start, nbrs] of adj.entries()) {
-    for (const nbr of nbrs) {
-      const k = edgeKey(start, nbr)
-      if (visited.has(k)) continue
-
-      // Start a new loop from this edge
-      const loop: number[] = [start, nbr]
-      visited.add(k)
-      let prev = start,
-        cur = nbr
-      while (true) {
-        const neighbors = Array.from(adj.get(cur)!)
-        const next = neighbors.find(
-          (n) => n !== prev && !visited.has(edgeKey(cur, n)),
-        )
-        if (next === undefined || next === start) break
-        visited.add(edgeKey(cur, next))
-        loop.push(next)
-        prev = cur
-        cur = next
+  // While there are edges remaining, walk them and remove as we go.
+  // This ensures each undirected boundary edge is consumed exactly once and
+  // produces disjoint closed cycles (open paths are ignored).
+  while (true) {
+    let start: number | undefined
+    for (const [k, s] of adj.entries()) {
+      if (s.size > 0) {
+        start = k
+        break
       }
-      // Close the loop if it returns to start
-      if (loop.length >= 3 && loop[0] === loop.at(-1)) loop.pop()
+    }
+    if (start === undefined) break
+
+    const sStart = start
+    const nbrs = adj.get(sStart)!
+    const firstIter = nbrs.values().next()
+    const first = firstIter.value
+    if (first === undefined) continue
+    // remove the first edge and begin walking
+    removeEdge(sStart, first)
+    removeEdge(first, sStart)
+
+    const loop: number[] = [sStart, first]
+    let prev: number = sStart
+    let cur: number = first
+    let closed = false
+
+    while (true) {
+      const neighbors = adj.get(cur)
+      if (!neighbors || neighbors.size === 0) break
+
+      // pick any available neighbor (prefer one that's not the vertex we came from)
+      let next: number | undefined
+      for (const n of neighbors) {
+        next = n
+        if (n !== prev) break
+      }
+      if (next === undefined) break
+
+      // consume edge cur-next
+      removeEdge(cur, next)
+      removeEdge(next, cur)
+      loop.push(next)
+
+      prev = cur
+      cur = next
+      if (cur === start) {
+        closed = true
+        break
+      }
+    }
+
+    if (closed) {
+      // If the loop accidentally duplicated the start at the end, drop it
+      if (loop.length >= 2 && loop[0] === loop.at(-1)) loop.pop()
       if (loop.length >= 3) loops.push(loop)
     }
+    // if not closed we simply drop the open path (it's not a boundary loop)
   }
+
   return loops
 }
 
@@ -194,6 +234,23 @@ function projectLoopWithIndexMap(
 }
 
 /**
+ * Compute the 2D area of a loop by projecting it to a local plane and using the shoelace formula.
+ */
+function computeLoopArea(
+  loop: number[],
+  logicalToPosition: Map<number, Vector3>,
+) {
+  const { pts2 } = projectLoopWithIndexMap(loop, logicalToPosition)
+  let sum = 0
+  for (let i = 0; i < pts2.length; i++) {
+    const [x1, y1] = pts2[i]
+    const [x2, y2] = pts2[(i + 1) % pts2.length]
+    sum += x1 * y2 - x2 * y1
+  }
+  return Math.abs(sum) * 0.5
+}
+
+/**
  * Samples a specified number of random Steiner points inside a given 2D polygon.
  * Points are uniformly sampled within the polygon's bounding box and tested for inclusion.
  *
@@ -205,12 +262,12 @@ function sampleSteinerPoints2D(
   polygon: [number, number][],
   numPoints: number,
 ): [number, number][] {
-  const xs = polygon.map((p) => p[0]),
-    ys = polygon.map((p) => p[1])
-  const minX = Math.min(...xs),
-    maxX = Math.max(...xs)
-  const minY = Math.min(...ys),
-    maxY = Math.max(...ys)
+  const xs = polygon.map((p) => p[0])
+  const ys = polygon.map((p) => p[1])
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
   const points: [number, number][] = []
   let tries = 0
   while (points.length < numPoints && tries < numPoints * 100) {
@@ -232,10 +289,10 @@ function sampleSteinerPoints2D(
 function pointInPolygon(pt: [number, number], polygon: [number, number][]) {
   let inside = false
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i][0],
-      yi = polygon[i][1]
-    const xj = polygon[j][0],
-      yj = polygon[j][1]
+    const xi = polygon[i][0]
+    const yi = polygon[i][1]
+    const xj = polygon[j][0]
+    const yj = polygon[j][1]
     const intersect =
       yi > pt[1] !== yj > pt[1] &&
       pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi + 1e-12) + xi
@@ -263,9 +320,9 @@ function filterTrianglesInsideBoundary(
 ): number[] {
   const filtered: number[] = []
   for (let i = 0; i < triangles.length; i += 3) {
-    const a = points2d[triangles[i]],
-      b = points2d[triangles[i + 1]],
-      c = points2d[triangles[i + 2]]
+    const a = points2d[triangles[i]]
+    const b = points2d[triangles[i + 1]]
+    const c = points2d[triangles[i + 2]]
     const centroid: [number, number] = [
       (a[0] + b[0] + c[0]) / 3,
       (a[1] + b[1] + c[1]) / 3,
@@ -308,8 +365,8 @@ export function triangulateBoundaryLoopsConstrainautor(
   logicalToPosition: Map<number, Vector3>,
   steinerDensity: number = 0,
 ): BufferGeometry {
-  const outPositions: number[] = [],
-    outIndices: number[] = []
+  const outPositions: number[] = []
+  const outIndices: number[] = []
   let nextIndex = 0
 
   for (const [, loop] of loops.entries()) {
@@ -326,9 +383,43 @@ export function triangulateBoundaryLoopsConstrainautor(
       (i + 1) % pts2.length,
     ])
 
-    // Generate constrained Delaunay triangulation
-    const delaunay = Delaunator.from(all2d)
-    new Constrainautor(delaunay, edges)
+    // Generate constrained Delaunay triangulation. Constrainautor may fail
+    // when a constraint edge intersects a point (numerical/degenerate cases).
+    // We try to constrain with Steiner points first; on failure we retry
+    // without Steiner points, and finally fall back to unconstrained
+    // Delaunator followed by interior filtering.
+    let delaunay = Delaunator.from(all2d)
+    try {
+      const con = new Constrainautor(delaunay)
+      con.delaunify(true)
+      con.constrainAll(edges)
+    } catch (error) {
+      console.info(
+        'Constrainautor failed with steiner points, retrying without Steiner points:',
+        error,
+      )
+      // Retry without Steiner points if we had any
+      if (steiner2d.length > 0) {
+        try {
+          const all2dRetry = pts2.slice()
+          delaunay = Delaunator.from(all2dRetry)
+          const con2 = new Constrainautor(delaunay)
+          con2.delaunify(true)
+          con2.constrainAll(edges)
+        } catch (error) {
+          console.info(
+            'Constrainautor also failed without Steiner points, falling back to unconstrained triangulation:',
+            error,
+          )
+          // leave delaunay as the unconstrained triangulation of all2d (or pts2)
+          // we'll filter by polygon interior below
+        }
+      } else {
+        console.info(
+          'Constrainautor failed (no Steiner points available), falling back to unconstrained triangulation',
+        )
+      }
+    }
 
     const filteredTriangles = filterTrianglesInsideBoundary(
       delaunay.triangles,
@@ -381,6 +472,7 @@ export function fillGeometryHoles(
   geometry: BufferGeometry,
   tolerance = 1e-5,
   steinerDensity = 0.7,
+  maxHoleArea?: number,
 ): FillHoleResult {
   // Require input geometry to be indexed. Do not auto-convert here.
   if (!geometry.index) {
@@ -391,14 +483,33 @@ export function fillGeometryHoles(
   const boundaryResult = findPositionBasedBoundaryEdges(geometry, tolerance)
   if (!boundaryResult.boundaryEdges.length) return { output: geometry }
   const loops = findBoundaryLoops(boundaryResult.boundaryEdges)
-  console.debug('Number of boundary loops:', loops.length)
+  console.info('Number of boundary loops:', loops.length)
   loops.forEach((loop, i) => {
-    console.debug(`Loop ${i}: length ${loop.length}`)
+    console.info(`Loop ${i}: length ${loop.length}`)
   })
 
-  if (loops.length === 0) return { output: geometry, boundaryResult, loops }
+  // Optionally skip very large loops (e.g. big openings or cavities). If
+  // maxHoleArea is provided, compute each loop area and filter out loops
+  // whose projected area exceeds the threshold. Default behavior (no
+  // options) preserves previous behavior.
+  const maxArea = maxHoleArea ?? Infinity
+  let usedLoops = loops
+  if (Number.isFinite(maxArea)) {
+    const before = loops.length
+    usedLoops = loops.filter((loop) => {
+      const area = computeLoopArea(loop, boundaryResult.logicalToPosition)
+      return area <= maxArea
+    })
+    const skipped = before - usedLoops.length
+    if (skipped > 0)
+      console.info(
+        `Skipped ${skipped} boundary loop(s) larger than maxHoleArea=${maxArea}`,
+      )
+  }
+
+  if (usedLoops.length === 0) return { output: geometry, boundaryResult, loops }
   const fillGeometry = triangulateBoundaryLoopsConstrainautor(
-    loops,
+    usedLoops,
     boundaryResult.logicalToPosition,
     steinerDensity,
   )
@@ -435,8 +546,8 @@ export function createBoundaryEdgesMesh(
   const positions = new Float32Array(boundaryEdges.length * 2 * 3)
   let i = 0
   for (const [v1, v2] of boundaryEdges) {
-    const p1 = logicalToPosition.get(v1)!,
-      p2 = logicalToPosition.get(v2)!
+    const p1 = logicalToPosition.get(v1)!
+    const p2 = logicalToPosition.get(v2)!
     positions[i++] = p1.x
     positions[i++] = p1.y
     positions[i++] = p1.z
