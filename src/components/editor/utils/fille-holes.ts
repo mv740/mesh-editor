@@ -383,6 +383,7 @@ export function triangulateBoundaryLoopsConstrainautor(
 ): BufferGeometry {
   const outPositions: number[] = []
   const outIndices: number[] = []
+  const boundaryMask: number[] = [] // 1 => boundary vertex, 0 => steiner/interior
   let nextIndex = 0
 
   for (const [, loop] of loops.entries()) {
@@ -471,6 +472,9 @@ export function triangulateBoundaryLoopsConstrainautor(
 
     const baseIndex = nextIndex
     for (const p of all3d) outPositions.push(p.x, p.y, p.z)
+    // record boundary mask: first boundaryVerts.length are boundary
+    for (let i = 0; i < boundaryVerts.length; i++) boundaryMask.push(1)
+    for (let i = 0; i < steinerVerts.length; i++) boundaryMask.push(0)
     nextIndex += all3d.length
 
     const indices = makePatchIndices(filteredTriangles, baseIndex, false)
@@ -479,8 +483,94 @@ export function triangulateBoundaryLoopsConstrainautor(
 
   const geom = new BufferGeometry()
   geom.setAttribute('position', new Float32BufferAttribute(outPositions, 3))
+  // mark boundary vertices so consumers can fix them during smoothing
+  geom.setAttribute(
+    'boundaryMask',
+    new BufferAttribute(new Uint8Array(boundaryMask), 1),
+  )
   geom.setIndex(outIndices)
   return geom
+}
+
+/**
+ * Constrained / Taubin Laplacian smoother for an indexed BufferGeometry.
+ * - geometry must be indexed and have 'position' attribute.
+ * - fixedVerts is a Set<number> of vertex indices (in geometry's position attr) to keep fixed.
+ * - iterations: number of smoothing passes.
+ * - lambda: positive smoothing weight (typical 0.2 - 0.6)
+ * - useTaubin: if true, performs lambda followed by mu to avoid shrink; mu should be negative (e.g. -0.53)
+ * - maxMove: clamp maximum vertex displacement per step (in world units), 0 means no clamp.
+ */
+export function laplacianSmooth(
+  geometry: BufferGeometry,
+  fixedVerts: Set<number> = new Set(),
+  iterations = 6,
+  lambda = 0.35,
+  useTaubin = true,
+  mu = -0.53,
+  maxMove = 1e-4,
+) {
+  if (!geometry.index) return
+  const posAttr = geometry.getAttribute('position') as BufferAttribute
+  const n = posAttr.count
+
+  // build adjacency
+  const adj: number[][] = Array.from({ length: n }, () => [])
+  const idx = Array.from(geometry.index!.array as ArrayLike<number>)
+  for (let i = 0; i < idx.length; i += 3) {
+    const a = idx[i]
+    const b = idx[i + 1]
+    const c = idx[i + 2]
+    if (!adj[a].includes(b)) adj[a].push(b)
+    if (!adj[a].includes(c)) adj[a].push(c)
+    if (!adj[b].includes(a)) adj[b].push(a)
+    if (!adj[b].includes(c)) adj[b].push(c)
+    if (!adj[c].includes(a)) adj[c].push(a)
+    if (!adj[c].includes(b)) adj[c].push(b)
+  }
+
+  const readPos = () => {
+    const a = posAttr.array as Float32Array
+    const arr: Vector3[] = Array.from(
+      { length: n },
+      (_, i) => new Vector3(a[i * 3], a[i * 3 + 1], a[i * 3 + 2]),
+    )
+    return arr
+  }
+
+  let positions = readPos()
+
+  const step = (weight: number) => {
+    const newPos = positions.map((p) => p.clone())
+    for (let i = 0; i < n; i++) {
+      if (fixedVerts.has(i)) continue
+      const nbrs = adj[i]
+      if (!nbrs || nbrs.length === 0) continue
+      const avg = new Vector3(0, 0, 0)
+      for (const j of nbrs) avg.add(positions[j])
+      avg.multiplyScalar(1 / nbrs.length)
+      const disp = avg.sub(positions[i]).multiplyScalar(weight)
+      if (maxMove > 0 && disp.length() > maxMove) disp.setLength(maxMove)
+      newPos[i].add(disp)
+    }
+    positions = newPos
+  }
+
+  for (let it = 0; it < iterations; it++) {
+    if (useTaubin) {
+      step(lambda)
+      step(mu)
+    } else {
+      step(lambda)
+    }
+  }
+
+  // write back
+  for (let i = 0; i < n; i++) {
+    posAttr.setXYZ(i, positions[i].x, positions[i].y, positions[i].z)
+  }
+  posAttr.needsUpdate = true
+  geometry.computeVertexNormals()
 }
 
 type FillHoleResult = {
@@ -501,6 +591,7 @@ type FillHoleResult = {
  * @param debugOnlyBoundary - If `true`, only computes and returns boundary information without filling holes.
  * @param splitAngleDeg - Angle in degrees for splitting normals during normal computation (default: `0`).
  * @param weldTolerance - Tolerance for welding vertices after merging geometries (default: `1e-6`).
+ * @param enabledLaplacian - If true, run a constrained Laplacian smoother on the generated patch before merging (default: `false`).
  * @returns An object containing the output geometry with filled holes, boundary information, triangulated mesh for filled holes, and boundary loops.
  * @throws If the input geometry is not indexed.
  */
@@ -512,6 +603,7 @@ export function fillGeometryHoles(
   debugOnlyBoundary = false,
   splitAngleDeg = 0,
   weldTolerance = 1e-6,
+  enabledLaplacian = false,
 ): FillHoleResult {
   if (!geometry.index) {
     throw new Error(
@@ -543,6 +635,30 @@ export function fillGeometryHoles(
     boundaryResult.logicalToPosition,
     steinerDensity,
   )
+
+  // Optionally run a constrained Laplacian smoother on the patch to test
+  // visual improvement. Use the temporary 'boundaryMask' attribute to keep
+  // boundary vertices fixed. After smoothing, remove the attribute so the
+  // patch can be merged with the source geometry.
+  if (enabledLaplacian) {
+    const bm =
+      fillGeometry.getAttribute &&
+      (fillGeometry.getAttribute('boundaryMask') as BufferAttribute | undefined)
+    if (bm) {
+      const arr = bm.array as Uint8Array | any
+      const fixed = new Set<number>()
+      for (let i = 0; i < (arr.length || 0); i++) if (arr[i]) fixed.add(i)
+      // conservative defaults; tune if you want stronger/weaker smoothing
+      laplacianSmooth(fillGeometry, fixed, 6, 0.35, true, -0.53, 1e-4)
+    }
+  }
+
+  // The patch generator sets a temporary 'boundaryMask' attribute to mark
+  // which vertices are boundary vs interior. Remove it before merging so
+  // BufferGeometryUtils.mergeGeometries doesn't fail due to mismatched attrs.
+  if (fillGeometry.getAttribute && fillGeometry.getAttribute('boundaryMask')) {
+    fillGeometry.deleteAttribute('boundaryMask')
+  }
 
   geometry.computeVertexNormals()
   fillGeometry.computeVertexNormals()
