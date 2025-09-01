@@ -473,6 +473,8 @@ export function fillGeometryHoles(
   tolerance = 1e-5,
   steinerDensity = 0.7,
   maxHoleArea?: number,
+  debugOnlyBoundary?: boolean,
+  splitAngleDeg?: number,
 ): FillHoleResult {
   // Require input geometry to be indexed. Do not auto-convert here.
   if (!geometry.index) {
@@ -488,6 +490,8 @@ export function fillGeometryHoles(
     console.info(`Loop ${i}: length ${loop.length}`)
   })
 
+  if (debugOnlyBoundary) return { output: geometry, boundaryResult, loops }
+
   // Optionally skip very large loops (e.g. big openings or cavities). If
   // maxHoleArea is provided, compute each loop area and filter out loops
   // whose projected area exceeds the threshold. Default behavior (no
@@ -495,16 +499,10 @@ export function fillGeometryHoles(
   const maxArea = maxHoleArea ?? Infinity
   let usedLoops = loops
   if (Number.isFinite(maxArea)) {
-    const before = loops.length
-    usedLoops = loops.filter((loop) => {
-      const area = computeLoopArea(loop, boundaryResult.logicalToPosition)
-      return area <= maxArea
-    })
-    const skipped = before - usedLoops.length
-    if (skipped > 0)
-      console.info(
-        `Skipped ${skipped} boundary loop(s) larger than maxHoleArea=${maxArea}`,
-      )
+    usedLoops = loops.filter(
+      (loop) =>
+        computeLoopArea(loop, boundaryResult.logicalToPosition) <= maxArea,
+    )
   }
 
   if (usedLoops.length === 0) return { output: geometry, boundaryResult, loops }
@@ -523,11 +521,14 @@ export function fillGeometryHoles(
     true,
   ) as BufferGeometry
 
-  const welded = mergeVertices(merged, 1e-4) as BufferGeometry
+  const weldTolerance = 1e-6
+  const welded = mergeVertices(merged, weldTolerance) as BufferGeometry
+  welded.computeVertexNormals()
 
   // compute and fix normals using your global routine
   const normalMeshFixed = computeConsistentNormals(welded, {
     flipIfInward: true,
+    splitAngleDeg: splitAngleDeg ?? 0,
   })
 
   return {
