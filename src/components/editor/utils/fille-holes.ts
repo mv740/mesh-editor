@@ -37,17 +37,7 @@ function computeLoopNormal(loopVerts: Vector3[]): Vector3 {
 }
 
 /**
- * Finds boundary edges in a geometry based on vertex positions, grouping vertices that are within a given tolerance.
- *
- * This function maps vertices to logical indices by rounding their positions according to the specified tolerance,
- * then identifies edges that appear only once among all triangles (i.e., boundary edges).
- *
- * @param geometry - The BufferGeometry to analyze for boundary edges.
- * @param tolerance - The positional tolerance for grouping vertices (default: 1e-5).
- * @returns An object containing:
- *   - `boundaryEdges`: An array of boundary edge pairs, each as a tuple of logical vertex indices.
- *   - `logicalIndex`: An array mapping each original vertex index to its logical index.
- *   - `logicalToPosition`: A map from logical index to the corresponding vertex position (Vector3).
+ * Finds boundary edges by quantizing positions to logical indices.
  */
 export function findPositionBasedBoundaryEdges(
   geometry: BufferGeometry,
@@ -104,19 +94,9 @@ export function findPositionBasedBoundaryEdges(
 }
 
 /**
- * Finds all boundary loops in a set of boundary edges.
- *
- * Given a list of undirected edges representing the boundaries of a mesh,
- * this function reconstructs all closed loops formed by these edges.
- * Each loop is returned as an array of vertex indices in order.
- *
- * @param boundaryEdges - An array of pairs of vertex indices, where each pair represents an undirected edge on the boundary.
- * @returns An array of loops, where each loop is an array of vertex indices representing a closed boundary.
+ * Reconstruct closed loops from undirected boundary edges.
  */
-export function findBoundaryLoops(
-  boundaryEdges: [number, number][],
-): number[][] {
-  // Build a mutable adjacency map (undirected)
+export function findBoundaryLoops(boundaryEdges: [number, number][]) {
   const adj = new Map<number, Set<number>>()
   for (const [a, b] of boundaryEdges) {
     if (!adj.has(a)) adj.set(a, new Set())
@@ -134,9 +114,6 @@ export function findBoundaryLoops(
 
   const loops: number[][] = []
 
-  // While there are edges remaining, walk them and remove as we go.
-  // This ensures each undirected boundary edge is consumed exactly once and
-  // produces disjoint closed cycles (open paths are ignored).
   while (true) {
     let start: number | undefined
     for (const [k, s] of adj.entries()) {
@@ -147,25 +124,26 @@ export function findBoundaryLoops(
     }
     if (start === undefined) break
 
-    const sStart = start
-    const nbrs = adj.get(sStart)!
+    const nbrs = adj.get(start)!
     const firstIter = nbrs.values().next()
     const first = firstIter.value
-    if (first === undefined) continue
-    // remove the first edge and begin walking
-    removeEdge(sStart, first)
-    removeEdge(first, sStart)
+    if (first === undefined) {
+      removeEdge(start, start)
+      continue
+    }
 
-    const loop: number[] = [sStart, first]
-    let prev: number = sStart
-    let cur: number = first
+    removeEdge(start, first)
+    removeEdge(first, start)
+
+    const loop: number[] = [start, first]
+    let prev = start
+    let cur = first
     let closed = false
 
     while (true) {
       const neighbors = adj.get(cur)
       if (!neighbors || neighbors.size === 0) break
 
-      // pick any available neighbor (prefer one that's not the vertex we came from)
       let next: number | undefined
       for (const n of neighbors) {
         next = n
@@ -173,7 +151,6 @@ export function findBoundaryLoops(
       }
       if (next === undefined) break
 
-      // consume edge cur-next
       removeEdge(cur, next)
       removeEdge(next, cur)
       loop.push(next)
@@ -187,32 +164,14 @@ export function findBoundaryLoops(
     }
 
     if (closed) {
-      // If the loop accidentally duplicated the start at the end, drop it
       if (loop.length >= 2 && loop[0] === loop.at(-1)) loop.pop()
       if (loop.length >= 3) loops.push(loop)
     }
-    // if not closed we simply drop the open path (it's not a boundary loop)
   }
 
   return loops
 }
 
-/**
- * Projects a loop of vertex indices onto a 2D plane based on their 3D positions.
- *
- * Given a loop of indices and a mapping from logical indices to 3D positions,
- * this function computes the normal of the loop, determines a local 2D basis (u, v),
- * and projects each vertex onto this plane relative to the loop's centroid.
- *
- * @param loop - Array of vertex indices representing the loop.
- * @param logicalToPosition - Map from logical vertex indices to their 3D positions (Vector3).
- * @returns An object containing:
- *   - pts2: The projected 2D coordinates of the loop vertices.
- *   - indexMap: A copy of the input loop indices.
- *   - centroid: The centroid of the loop in 3D space.
- *   - u: The first basis vector of the local 2D plane.
- *   - v: The second basis vector of the local 2D plane.
- */
 function projectLoopWithIndexMap(
   loop: number[],
   logicalToPosition: Map<number, Vector3>,
@@ -233,9 +192,6 @@ function projectLoopWithIndexMap(
   return { pts2, indexMap: loop.slice(), centroid, u, v }
 }
 
-/**
- * Compute the 2D area of a loop by projecting it to a local plane and using the shoelace formula.
- */
 function computeLoopArea(
   loop: number[],
   logicalToPosition: Map<number, Vector3>,
@@ -250,18 +206,7 @@ function computeLoopArea(
   return Math.abs(sum) * 0.5
 }
 
-/**
- * Samples a specified number of random Steiner points inside a given 2D polygon.
- * Points are uniformly sampled within the polygon's bounding box and tested for inclusion.
- *
- * @param polygon - An array of [x, y] coordinate pairs representing the vertices of the polygon.
- * @param numPoints - The number of Steiner points to sample inside the polygon.
- * @returns An array of [x, y] coordinate pairs representing the sampled Steiner points.
- */
-function sampleSteinerPoints2D(
-  polygon: [number, number][],
-  numPoints: number,
-): [number, number][] {
+function sampleSteinerPoints2D(polygon: [number, number][], numPoints: number) {
   const xs = polygon.map((p) => p[0])
   const ys = polygon.map((p) => p[1])
   const minX = Math.min(...xs)
@@ -317,7 +262,7 @@ function filterTrianglesInsideBoundary(
   triangles: Uint32Array | number[],
   points2d: [number, number][],
   boundary: [number, number][],
-): number[] {
+) {
   const filtered: number[] = []
   for (let i = 0; i < triangles.length; i += 3) {
     const a = points2d[triangles[i]]
@@ -350,15 +295,86 @@ function makePatchIndices(
 }
 
 /**
- * Triangulates multiple boundary loops with optional Steiner point insertion and constrained triangulation.
+ * Computes the barycentric coordinates (u, v, w) of a point (px, py) with respect to a triangle defined by vertices a, b, and c in 2D space.
  *
- * Projects each loop to 2D, samples Steiner points if requested, and performs constrained Delaunay triangulation.
- * The resulting triangles are filtered to remain inside the original boundary, and the final mesh is reconstructed in 3D.
+ * @param px - The x-coordinate of the point to evaluate.
+ * @param py - The y-coordinate of the point to evaluate.
+ * @param a - The first vertex of the triangle as a tuple [x, y].
+ * @param b - The second vertex of the triangle as a tuple [x, y].
+ * @param c - The third vertex of the triangle as a tuple [x, y].
+ * @returns An object containing the barycentric coordinates { u, v, w }, or `null` if the triangle is degenerate (area is too small).
+ */
+function barycentric2D(
+  px: number,
+  py: number,
+  a: [number, number],
+  b: [number, number],
+  c: [number, number],
+  eps = 1e-12,
+) {
+  const v0x = b[0] - a[0]
+  const v0y = b[1] - a[1]
+  const v1x = c[0] - a[0]
+  const v1y = c[1] - a[1]
+  const v2x = px - a[0]
+  const v2y = py - a[1]
+  const den = v0x * v1y - v1x * v0y
+  if (Math.abs(den) < eps) return null
+  const inv = 1 / den
+  const u = (v2x * v1y - v1x * v2y) * inv
+  const v_ = (v0x * v2y - v2x * v0y) * inv
+  const w = 1 - u - v_
+  return { u, v: v_, w }
+}
+
+/**
+ * Computes the Inverse Distance Weighted (IDW) interpolation for a given 2D point.
+ *
+ * Given a point `s2`, this function calculates weights based on the inverse squared distance
+ * to each point in `pts2`, applies these weights to the corresponding 3D boundary vertices,
+ * and returns the interpolated 3D position.
+ *
+ * @param s2 - The 2D point `[x, y]` for which to compute the IDW interpolation.
+ * @returns The interpolated `Vector3` position.
+ *
+ * @remarks
+ * - Uses a small epsilon (`epsIdw`) to avoid division by zero.
+ * - Assumes `pts2` is an array of 2D points and `boundaryVerts` is an array of corresponding `Vector3` objects.
+ */
+function computeIDW(
+  s2: [number, number],
+  pts2: [number, number][],
+  boundaryVerts: Vector3[],
+) {
+  const epsIdw = 1e-12
+  let wsum = 0
+  const weights: number[] = []
+  for (const b of pts2) {
+    const dx = s2[0] - b[0]
+    const dy = s2[1] - b[1]
+    const d2 = dx * dx + dy * dy
+    const w = 1 / (d2 + epsIdw)
+    weights.push(w)
+    wsum += w
+  }
+  const p = new Vector3(0, 0, 0)
+  for (let i = 0; i < boundaryVerts.length; i++)
+    p.add(boundaryVerts[i].clone().multiplyScalar(weights[i] / wsum))
+  return p
+}
+
+/**
+ * Triangulates one or more boundary loops with optional Steiner point insertion and constrained Delaunay triangulation.
+ *
+ * This function projects each input loop to 2D, optionally samples additional Steiner points for improved triangulation,
+ * and applies constrained Delaunay triangulation to ensure the boundary edges are preserved. The resulting triangles are
+ * filtered to remain inside the boundary. Steiner points are lifted back to 3D using barycentric interpolation from the boundary,
+ * with inverse distance weighting (IDW) as a fallback. The final mesh is returned as a BufferGeometry.
  *
  * @param loops - An array of boundary loops, each represented as an array of logical vertex indices.
- * @param logicalToPosition - A map from logical vertex indices to their 3D positions (Vector3).
- * @param steinerDensity - Optional density of Steiner points to insert for improved triangulation (default is 0).
- * @returns A BufferGeometry containing the triangulated mesh patch for all input loops.
+ * @param logicalToPosition - A map from logical vertex indices to their corresponding 3D positions (Vector3).
+ * @param steinerDensity - Optional density factor for sampling Steiner points inside the boundary (default: 0).
+ * @returns A BufferGeometry containing the triangulated mesh for all input loops.
  */
 export function triangulateBoundaryLoopsConstrainautor(
   loops: number[][],
@@ -371,10 +387,7 @@ export function triangulateBoundaryLoopsConstrainautor(
 
   for (const [, loop] of loops.entries()) {
     if (loop.length < 3) continue
-    const { pts2, indexMap, centroid, u, v } = projectLoopWithIndexMap(
-      loop,
-      logicalToPosition,
-    )
+    const { pts2, indexMap } = projectLoopWithIndexMap(loop, logicalToPosition)
     const nSteiner = Math.max(0, Math.round(pts2.length * steinerDensity))
     const steiner2d = nSteiner > 0 ? sampleSteinerPoints2D(pts2, nSteiner) : []
     const all2d = pts2.concat(steiner2d)
@@ -383,22 +396,12 @@ export function triangulateBoundaryLoopsConstrainautor(
       (i + 1) % pts2.length,
     ])
 
-    // Generate constrained Delaunay triangulation. Constrainautor may fail
-    // when a constraint edge intersects a point (numerical/degenerate cases).
-    // We try to constrain with Steiner points first; on failure we retry
-    // without Steiner points, and finally fall back to unconstrained
-    // Delaunator followed by interior filtering.
     let delaunay = Delaunator.from(all2d)
     try {
       const con = new Constrainautor(delaunay)
       con.delaunify(true)
       con.constrainAll(edges)
-    } catch (error) {
-      console.info(
-        'Constrainautor failed with steiner points, retrying without Steiner points:',
-        error,
-      )
-      // Retry without Steiner points if we had any
+    } catch {
       if (steiner2d.length > 0) {
         try {
           const all2dRetry = pts2.slice()
@@ -406,18 +409,9 @@ export function triangulateBoundaryLoopsConstrainautor(
           const con2 = new Constrainautor(delaunay)
           con2.delaunify(true)
           con2.constrainAll(edges)
-        } catch (error) {
-          console.info(
-            'Constrainautor also failed without Steiner points, falling back to unconstrained triangulation:',
-            error,
-          )
-          // leave delaunay as the unconstrained triangulation of all2d (or pts2)
-          // we'll filter by polygon interior below
+        } catch {
+          // leave delaunay as-is (unconstrained)
         }
-      } else {
-        console.info(
-          'Constrainautor failed (no Steiner points available), falling back to unconstrained triangulation',
-        )
       }
     }
 
@@ -426,16 +420,55 @@ export function triangulateBoundaryLoopsConstrainautor(
       all2d,
       pts2,
     )
+
+    // Boundary verts (preserve exactly)
     const boundaryVerts = indexMap.map((idx) =>
       logicalToPosition.get(idx)!.clone(),
     )
-    const steinerVerts = steiner2d.map(([x, y]) =>
-      centroid
-        .clone()
-        .add(u.clone().multiplyScalar(x))
-        .add(v.clone().multiplyScalar(y)),
-    )
+
+    // Build a boundary-only triangulation for barycentric lifting
+    let boundaryTris: number[] = []
+    try {
+      const bd = Delaunator.from(pts2)
+      boundaryTris = filterTrianglesInsideBoundary(bd.triangles, pts2, pts2)
+    } catch {
+      boundaryTris = []
+    }
+
+    // Lift: boundary verts + steiner lifts
+    const steinerVerts: Vector3[] = []
+    for (const s2 of steiner2d) {
+      let lifted: Vector3 | null = null
+      // search for a boundary triangle that contains s2
+      for (let t = 0; t < boundaryTris.length; t += 3) {
+        const ia = boundaryTris[t]
+        const ib = boundaryTris[t + 1]
+        const ic = boundaryTris[t + 2]
+        const a2 = pts2[ia]
+        const b2 = pts2[ib]
+        const c2 = pts2[ic]
+        const bary = barycentric2D(s2[0], s2[1], a2, b2, c2)
+        if (bary && bary.u >= -1e-8 && bary.v >= -1e-8 && bary.w >= -1e-8) {
+          // use barycentric to interpolate 3D from boundaryVerts
+          const pa = boundaryVerts[ia]
+          const pb = boundaryVerts[ib]
+          const pc = boundaryVerts[ic]
+          lifted = new Vector3(0, 0, 0)
+            .add(pa.clone().multiplyScalar(bary.w))
+            .add(pb.clone().multiplyScalar(bary.u))
+            .add(pc.clone().multiplyScalar(bary.v))
+          break
+        }
+      }
+      if (!lifted) {
+        // fallback IDW
+        lifted = computeIDW(s2, pts2, boundaryVerts)
+      }
+      steinerVerts.push(lifted)
+    }
+
     const all3d = boundaryVerts.concat(steinerVerts)
+
     const baseIndex = nextIndex
     for (const p of all3d) outPositions.push(p.x, p.y, p.z)
     nextIndex += all3d.length
@@ -443,10 +476,10 @@ export function triangulateBoundaryLoopsConstrainautor(
     const indices = makePatchIndices(filteredTriangles, baseIndex, false)
     outIndices.push(...indices)
   }
+
   const geom = new BufferGeometry()
   geom.setAttribute('position', new Float32BufferAttribute(outPositions, 3))
   geom.setIndex(outIndices)
-
   return geom
 }
 
@@ -458,25 +491,28 @@ type FillHoleResult = {
 }
 
 /**
- * Fills holes in a given BufferGeometry by detecting boundary edges, forming loops,
- * and triangulating the resulting boundaries. The function merges the original geometry
- * with the generated patch, welds duplicate vertices, and ensures consistent normals.
+ * Fills holes in a given indexed `BufferGeometry` by detecting boundary edges,
+ * optionally filtering holes by area, and triangulating the boundaries.
  *
- * @param geometry - The input BufferGeometry to process and fill holes in.
- * @param tolerance - Optional. The positional tolerance for detecting boundary edges. Defaults to 1e-5.
- * @param steinerDensity - Optional. Controls the density of Steiner points for triangulation. Defaults to 0.7.
- * @returns An object containing the output geometry with holes filled, boundary detection results,
- *          the triangulated mesh used to fill holes, and the detected boundary loops.
+ * @param geometry - The indexed `BufferGeometry` to process. Must have an index.
+ * @param tolerance - Tolerance for detecting boundary edges (default: `1e-5`).
+ * @param steinerDensity - Density factor for Steiner points in triangulation (default: `0.7`).
+ * @param maxHoleArea - Optional maximum area for holes to fill. Holes with projected area above this are skipped.
+ * @param debugOnlyBoundary - If `true`, only computes and returns boundary information without filling holes.
+ * @param splitAngleDeg - Angle in degrees for splitting normals during normal computation (default: `0`).
+ * @param weldTolerance - Tolerance for welding vertices after merging geometries (default: `1e-6`).
+ * @returns An object containing the output geometry with filled holes, boundary information, triangulated mesh for filled holes, and boundary loops.
+ * @throws If the input geometry is not indexed.
  */
 export function fillGeometryHoles(
   geometry: BufferGeometry,
   tolerance = 1e-5,
   steinerDensity = 0.7,
   maxHoleArea?: number,
-  debugOnlyBoundary?: boolean,
-  splitAngleDeg?: number,
+  debugOnlyBoundary = false,
+  splitAngleDeg = 0,
+  weldTolerance = 1e-6,
 ): FillHoleResult {
-  // Require input geometry to be indexed. Do not auto-convert here.
   if (!geometry.index) {
     throw new Error(
       'fillGeometryHoles requires an indexed geometry (geometry.index must be present)',
@@ -485,10 +521,6 @@ export function fillGeometryHoles(
   const boundaryResult = findPositionBasedBoundaryEdges(geometry, tolerance)
   if (!boundaryResult.boundaryEdges.length) return { output: geometry }
   const loops = findBoundaryLoops(boundaryResult.boundaryEdges)
-  console.info('Number of boundary loops:', loops.length)
-  loops.forEach((loop, i) => {
-    console.info(`Loop ${i}: length ${loop.length}`)
-  })
 
   if (debugOnlyBoundary) return { output: geometry, boundaryResult, loops }
 
@@ -504,8 +536,8 @@ export function fillGeometryHoles(
         computeLoopArea(loop, boundaryResult.logicalToPosition) <= maxArea,
     )
   }
-
   if (usedLoops.length === 0) return { output: geometry, boundaryResult, loops }
+
   const fillGeometry = triangulateBoundaryLoopsConstrainautor(
     usedLoops,
     boundaryResult.logicalToPosition,
@@ -515,13 +547,10 @@ export function fillGeometryHoles(
   geometry.computeVertexNormals()
   fillGeometry.computeVertexNormals()
 
-  // Merge the original geometry and the patch.
   const merged = mergeGeometries(
     [geometry, fillGeometry],
     true,
   ) as BufferGeometry
-
-  const weldTolerance = 1e-6
   const welded = mergeVertices(merged, weldTolerance) as BufferGeometry
   welded.computeVertexNormals()
 
@@ -539,10 +568,11 @@ export function fillGeometryHoles(
   }
 }
 
+/** Create a line segments mesh showing boundary edges (for debug/visualization) */
 export function createBoundaryEdgesMesh(
   boundaryResult: BoundaryResult,
   color: ColorRepresentation = 0xff0000,
-): LineSegments {
+) {
   const { boundaryEdges, logicalToPosition } = boundaryResult
   const positions = new Float32Array(boundaryEdges.length * 2 * 3)
   let i = 0
