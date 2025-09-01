@@ -18,6 +18,13 @@ export interface ComputeConsistentNormalsOptions {
    * Default: false
    */
   flipIfInward?: boolean
+  /**
+   * If > 0, split vertices across sharp edges where the angle between adjacent
+   * face normals exceeds this threshold (in degrees). This duplicates vertices
+   * along those seams so normals are not averaged across hard edges.
+   * Default: 0 (no splitting)
+   */
+  splitAngleDeg?: number
 }
 
 /**
@@ -193,9 +200,7 @@ export function computeConsistentNormals(
   }
   geometry.setIndex(new BufferAttribute(idxBuffer, 1))
 
-  // 4) Compute face normals and accumulate to vertex normals (area-weighted)
-  const vertexNormals = new Float32Array(uniqueCount * 3)
-
+  // 4) Compute face normals (unnormalized; magnitude ~ 2*area)
   const tmpA = new Vector3()
   const tmpB = new Vector3()
   const tmpC = new Vector3()
@@ -206,6 +211,14 @@ export function computeConsistentNormals(
   const idxArr = geometry.index!.array as ArrayLike<number>
   const posArr = geometry.attributes.position.array as ArrayLike<number>
 
+  // store per-face normals
+  // store per-face normals and detect degenerate (zero-area) faces
+  const faceNormals: Vector3[] = Array.from(
+    { length: faceCount },
+    () => new Vector3(),
+  )
+  const degenerateFace = new Uint8Array(faceCount)
+  let degenerateCount = 0
   for (let f = 0; f < faceCount; f++) {
     const ia = idxArr[f * 3]
     const ib = idxArr[f * 3 + 1]
@@ -218,29 +231,172 @@ export function computeConsistentNormals(
     edge1.subVectors(tmpB, tmpA)
     edge2.subVectors(tmpC, tmpA)
     faceNormal.crossVectors(edge1, edge2) // unnormalized; magnitude ~ 2*area
-
-    vertexNormals[ia * 3] += faceNormal.x
-    vertexNormals[ia * 3 + 1] += faceNormal.y
-    vertexNormals[ia * 3 + 2] += faceNormal.z
-
-    vertexNormals[ib * 3] += faceNormal.x
-    vertexNormals[ib * 3 + 1] += faceNormal.y
-    vertexNormals[ib * 3 + 2] += faceNormal.z
-
-    vertexNormals[ic * 3] += faceNormal.x
-    vertexNormals[ic * 3 + 1] += faceNormal.y
-    vertexNormals[ic * 3 + 2] += faceNormal.z
+    const lenSq = faceNormal.lengthSq()
+    if (lenSq <= 1e-18) {
+      degenerateFace[f] = 1
+      degenerateCount++
+      faceNormals[f] = new Vector3(0, 0, 0)
+    } else {
+      faceNormals[f] = faceNormal.clone()
+    }
+  }
+  if (degenerateCount > 0) {
+    console.warn(
+      `[computeConsistentNormals] ${degenerateCount} degenerate (zero-area) faces were detected and ignored.`,
+    )
   }
 
-  // normalize vertex normals and count zero-length normals
+  // If requested, split vertices across sharp edges by clustering incident
+  // faces per-vertex according to face normal angle.
+  const splitAngleDeg =
+    options.splitAngleDeg === undefined ? 0 : options.splitAngleDeg
+  let finalPositions = Array.prototype.slice.call(posArr) as number[]
+  let finalIndexArray: Uint32Array = new Uint32Array(idxArr as any)
+
+  if (splitAngleDeg > 0) {
+    const cosThresh = Math.cos((splitAngleDeg * Math.PI) / 180)
+
+    // build vertex -> incident faces map
+    const vertexFaces: number[][] = Array.from(
+      { length: uniqueCount },
+      () => [],
+    )
+    for (let f = 0; f < faceCount; f++) {
+      vertexFaces[idxArr[f * 3]].push(f)
+      vertexFaces[idxArr[f * 3 + 1]].push(f)
+      vertexFaces[idxArr[f * 3 + 2]].push(f)
+    }
+
+    // mapping: for each original vertex and face -> new vertex index
+    const mapping: Array<Map<number, number>> = Array.from(
+      { length: uniqueCount },
+      () => new Map(),
+    )
+
+    // newPositions starts with existing unique positions
+    const newPositions: number[] = finalPositions.slice()
+
+    for (let v = 0; v < uniqueCount; v++) {
+      const incident = vertexFaces[v]
+      if (incident.length === 0) continue
+
+      // groups: array of { repNormal: Vector3, faces: number[] }
+      const groups: { rep: Vector3; faces: number[] }[] = []
+
+      for (const f of incident) {
+        const fn = faceNormals[f].clone().normalize()
+        let assigned = false
+        for (const g of groups) {
+          // compare fn with group's representative normal (dot product)
+          const dot = fn.dot(g.rep)
+          if (dot >= cosThresh) {
+            g.faces.push(f)
+            // update representative as normalized sum
+            g.rep.add(fn).normalize()
+            assigned = true
+            break
+          }
+        }
+        if (!assigned) {
+          groups.push({ rep: fn.clone(), faces: [f] })
+        }
+      }
+
+      // For the first group reuse original vertex index v; for other groups create duplicates
+      for (const [gi, g] of groups.entries()) {
+        let newIdx: number
+        if (gi === 0) {
+          newIdx = v
+        } else {
+          // duplicate position
+          const px = posArr[v * 3]
+          const py = posArr[v * 3 + 1]
+          const pz = posArr[v * 3 + 2]
+          newIdx = newPositions.length / 3
+          newPositions.push(px, py, pz)
+        }
+        for (const f of g.faces) mapping[v].set(f, newIdx)
+      }
+    }
+
+    // rebuild index array using mapping
+    const newIdxArr = new Uint32Array(idxArr.length)
+    for (let f = 0; f < faceCount; f++) {
+      for (let j = 0; j < 3; j++) {
+        const oldV = idxArr[f * 3 + j]
+        const mapped = mapping[oldV].get(f)
+        if (mapped === undefined) {
+          // fallback to original
+          newIdxArr[f * 3 + j] = oldV
+        } else {
+          newIdxArr[f * 3 + j] = mapped
+        }
+      }
+    }
+
+    finalPositions = newPositions
+    finalIndexArray = newIdxArr
+  }
+
+  // Now accumulate vertex normals from faceNormals using finalIndexArray and finalPositions
+  // Remove unreferenced vertices (those not used by any triangle) so they
+  // don't produce zero-length normals. This compacts positions and remaps
+  // the index buffer.
+  let finalVertexCount = finalPositions.length / 3
+  if (finalIndexArray.length > 0) {
+    const used = new Uint8Array(finalVertexCount)
+    for (let i = 0; i < finalIndexArray.length; i++)
+      used[finalIndexArray[i]] = 1
+
+    // If some vertices are unused, compact
+    let anyUnused = false
+    for (let i = 0; i < finalVertexCount; i++)
+      if (!used[i]) {
+        anyUnused = true
+        break
+      }
+    if (anyUnused) {
+      const oldToNew = new Uint32Array(finalVertexCount)
+      const newPositions: number[] = []
+      let nextIdx = 0
+      for (let v = 0; v < finalVertexCount; v++) {
+        if (used[v]) {
+          oldToNew[v] = nextIdx
+          newPositions.push(
+            finalPositions[v * 3],
+            finalPositions[v * 3 + 1],
+            finalPositions[v * 3 + 2],
+          )
+          nextIdx++
+        }
+      }
+      const newIndexArray = new Uint32Array(finalIndexArray.length)
+      for (let i = 0; i < finalIndexArray.length; i++)
+        newIndexArray[i] = oldToNew[finalIndexArray[i]]
+      finalPositions = newPositions
+      finalIndexArray = newIndexArray
+      finalVertexCount = finalPositions.length / 3
+    }
+  }
+  const vertexNormals = new Float32Array(finalVertexCount * 3)
+  for (let f = 0; f < faceCount; f++) {
+    const fn = faceNormals[f]
+    for (let j = 0; j < 3; j++) {
+      const vid = finalIndexArray[f * 3 + j]
+      vertexNormals[vid * 3] += fn.x
+      vertexNormals[vid * 3 + 1] += fn.y
+      vertexNormals[vid * 3 + 2] += fn.z
+    }
+  }
+
+  // normalize vertex normals and assign fallback for zero-length
   let zeroNormalCount = 0
-  for (let i = 0; i < uniqueCount; i++) {
+  for (let i = 0; i < finalVertexCount; i++) {
     const nx = vertexNormals[i * 3]
     const ny = vertexNormals[i * 3 + 1]
     const nz = vertexNormals[i * 3 + 2]
     const len = Math.hypot(nx, ny, nz)
     if (len === 0) {
-      // Assign a deterministic fallback normal to avoid all-zero normals
       vertexNormals[i * 3] = 0
       vertexNormals[i * 3 + 1] = 0
       vertexNormals[i * 3 + 2] = 1
@@ -252,6 +408,12 @@ export function computeConsistentNormals(
     }
   }
 
+  // Write final positions & normals & index into geometry
+  geometry.setAttribute(
+    'position',
+    new Float32BufferAttribute(finalPositions, 3),
+  )
+  geometry.setIndex(new BufferAttribute(finalIndexArray, 1))
   geometry.setAttribute('normal', new Float32BufferAttribute(vertexNormals, 3))
   if (zeroNormalCount > 0) {
     console.warn(

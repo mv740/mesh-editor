@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Mesh, MeshBasicMaterial, type LineSegments } from 'three'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import {
@@ -31,6 +32,18 @@ export const TransformControls = ({
     kept: SelectedPoint[]
     removed: SelectedPoint[]
   } | null>(null)
+
+  // Per-feature settings (separate settings for clip, fill hole, etc.)
+  const [showFillSettings, setShowFillSettings] = useState(false)
+  const [fillSteinerDensity, setFillSteinerDensity] = useState<number>(0.5)
+  const [fillMaxHoleArea, setFillMaxHoleArea] = useState<number | undefined>(
+    0.05,
+  )
+  const [fillDebugOnlyBoundary, setFillDebugOnlyBoundary] =
+    useState<boolean>(false)
+  const [fillSplitAngleDeg, setFillSplitAngleDeg] = useState<number>(30)
+  const [fillWeldEnabled, setFillWeldEnabled] = useState<boolean>(true)
+  const [fillWeldTolerance, setFillWeldTolerance] = useState<number>(1e-6)
 
   const { addToHistory, currentState } = useMeshHistory()
 
@@ -141,16 +154,137 @@ export const TransformControls = ({
               setPendingSelection(null)
             }}
           />
+          {/* Fill hole settings */}
+          <ScrollArea className="flex-1 min-h-24" type="auto">
+            <div className="mt-3 p-3 border rounded-md bg-muted/5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="show-fill-settings">Fill hole settings</Label>
+                </div>
+                <Switch
+                  id="show-fill-settings"
+                  checked={showFillSettings}
+                  onCheckedChange={(v) => setShowFillSettings(Boolean(v))}
+                />
+              </div>
+              {showFillSettings && (
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <Label htmlFor="steiner-density">
+                      Steiner density: {fillSteinerDensity}
+                    </Label>
+                    <input
+                      id="steiner-density"
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={String(fillSteinerDensity)}
+                      onChange={(e) =>
+                        setFillSteinerDensity(Number.parseFloat(e.target.value))
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="max-hole-area">
+                      Max hole area (projected):
+                    </Label>
+                    <input
+                      id="max-hole-area"
+                      type="number"
+                      step={0.001}
+                      min={0}
+                      value={
+                        fillMaxHoleArea === undefined
+                          ? ''
+                          : String(fillMaxHoleArea)
+                      }
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setFillMaxHoleArea(v === '' ? undefined : Number(v))
+                      }}
+                      className="w-full rounded border px-2 py-1"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="debug-only-boundary">
+                      Debug: only detect boundary
+                    </Label>
+                    <Switch
+                      id="debug-only-boundary"
+                      checked={fillDebugOnlyBoundary}
+                      onCheckedChange={(v) =>
+                        setFillDebugOnlyBoundary(Boolean(v))
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="split-angle">
+                      Sharp split angle (deg): {fillSplitAngleDeg}
+                    </Label>
+                    <input
+                      id="split-angle"
+                      type="range"
+                      min={0}
+                      max={180}
+                      step={1}
+                      value={String(fillSplitAngleDeg)}
+                      onChange={(e) =>
+                        setFillSplitAngleDeg(Number(e.target.value))
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="weld-enabled">
+                      Weld vertices after merge
+                    </Label>
+                    <Switch
+                      id="weld-enabled"
+                      checked={fillWeldEnabled}
+                      onCheckedChange={(v) => setFillWeldEnabled(Boolean(v))}
+                    />
+                  </div>
+                  {fillWeldEnabled && (
+                    <div>
+                      <Label htmlFor="weld-tol">
+                        Weld tolerance: {fillWeldTolerance}
+                      </Label>
+                      <input
+                        id="weld-tol"
+                        type="number"
+                        step={1e-7}
+                        min={1e-9}
+                        value={String(fillWeldTolerance)}
+                        onChange={(e) =>
+                          setFillWeldTolerance(Number(e.target.value))
+                        }
+                        className="w-full rounded border px-2 py-1"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+
           <Button
             variant="outline"
             onClick={() => {
               if (currentState.meshGeometry) {
                 const geometry = currentState.meshGeometry.clone()
 
-                // test
-                const fillTest = fillGeometryHoles(geometry, 1e-5, 0.5, {
-                  maxHoleArea: 0.05,
-                })
+                // test - use per-feature settings
+                const fillTest = fillGeometryHoles(
+                  geometry,
+                  1e-5, // tolerance
+                  fillSteinerDensity,
+                  fillMaxHoleArea,
+                  fillDebugOnlyBoundary,
+                  fillSplitAngleDeg,
+                  fillWeldEnabled ? fillWeldTolerance : 0,
+                )
                 let edgeMesh: LineSegments | undefined
                 if (fillTest?.boundaryResult) {
                   edgeMesh = createBoundaryEdgesMesh(
