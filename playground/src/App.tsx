@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { MeshEditor } from '../../src'
-import { Button } from '../../src/components/ui/button'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -8,7 +7,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '../../src/components/ui/card'
+} from '@/components/ui/card'
 import {
   Dropzone,
   DropzoneDescription,
@@ -17,7 +16,8 @@ import {
   DropzoneTitle,
   DropzoneUploadIcon,
   DropzoneZone,
-} from '../../src/components/ui/dropzone'
+} from '@/components/ui/dropzone'
+import { MeshEditor } from '@/mesh-editor'
 
 export function App() {
   const [files, setFiles] = useState<File[]>([])
@@ -44,11 +44,7 @@ export function App() {
     return (
       <>
         <div className="h-screen dark bg-gray-600">
-          <MeshEditor
-            title="Mesh Editor"
-            description="InputDescription"
-            inputSettings={{ file: files[0] }}
-          />
+          <MeshEditor title="Mesh Editor" inputSettings={{ file: files[0] }} />
         </div>
       </>
     )
@@ -80,8 +76,7 @@ export function App() {
                               Drop files here or click to upload
                             </DropzoneTitle>
                             <DropzoneDescription>
-                              You can upload files up to 10MB in size. Supported
-                              formats: STL
+                              Supported formats: STL
                             </DropzoneDescription>
                           </DropzoneGroup>
                         </DropzoneGroup>
