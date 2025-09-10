@@ -28,7 +28,7 @@ describe('GeometryModel', () => {
 
     const renderer = await ReactThreeTestRenderer.create(
       <MeshHistoryProvider>
-        <GeometryModel stlUrl={dataUrl} viewType={'solid'} />
+        <GeometryModel stlUrl={dataUrl} />
       </MeshHistoryProvider>,
     )
 
