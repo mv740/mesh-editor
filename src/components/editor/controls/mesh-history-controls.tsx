@@ -99,7 +99,7 @@ export const MeshHistoryControls = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...history].reverse().map((entry, idx) => {
+              {[...history].toReversed().map((entry, idx) => {
                 const isActive = currentIndex === history.length - 1 - idx
                 return (
                   <TableRow

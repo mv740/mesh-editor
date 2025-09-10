@@ -11,10 +11,11 @@ import { STLLoader } from 'three/examples/jsm/Addons.js'
 import { useMeshHistory } from './history/mesh-history-provider'
 import { ClipTransformComponent } from './transform/clip-transform'
 import { LandmarkWithLabel, SegmentLine2 } from './utils/geometry-utils'
-import type { EditorState, SelectedPoint } from './type'
+import type { EditorState, MeshViewType, SelectedPoint } from './type'
 
 interface GeometryModelProps {
   stlUrl: string
+  viewType: MeshViewType
   onLoad?: () => void
   onPointSelect?: (
     point: Vector3,
@@ -27,7 +28,6 @@ interface GeometryModelProps {
   selectedLandmarkId?: number | null
   landmarksVisible?: boolean
   meshOpacity?: number
-  wireframeVisible?: boolean
   landmarkLabelsVisible?: boolean
   meshOutlineVisible?: boolean
   holesVisible?: boolean
@@ -35,6 +35,7 @@ interface GeometryModelProps {
 
 export const GeometryModel = ({
   stlUrl,
+  viewType,
   onLoad,
   onPointSelect,
   editorState,
@@ -43,7 +44,6 @@ export const GeometryModel = ({
   selectedLandmarkId,
   setSelectedLandmarkId,
   meshOpacity = 1,
-  wireframeVisible = false,
   landmarkLabelsVisible = true,
   meshOutlineVisible = true,
   holesVisible = true,
@@ -129,14 +129,17 @@ export const GeometryModel = ({
         }
       >
         <primitive object={currentMesh} attach="geometry" />
-        <meshPhongMaterial
-          transparent={true}
-          visible={true}
-          opacity={meshOpacity}
-          wireframe={wireframeVisible}
-          side={DoubleSide}
-        />
-        {/* <meshNormalMaterial /> */}
+        {viewType !== 'normals' ? (
+          <meshPhongMaterial
+            transparent={true}
+            visible={true}
+            opacity={meshOpacity}
+            // wireframe={wireframeVisible}
+            wireframe={viewType === 'wireframe'}
+          />
+        ) : (
+          <meshNormalMaterial />
+        )}
       </mesh>
     </Bvh>
   )
@@ -186,8 +189,8 @@ export const GeometryModel = ({
       {editorState === 'transforms' ? (
         <ClipTransformComponent
           geometry={currentMesh}
+          viewType={viewType}
           meshRef={meshRef}
-          wireframe={wireframeVisible}
           opacity={meshOpacity}
           color={'grey'}
           meshOutlineVisible={meshOutlineVisible}
