@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react'
-import { initialClipPlane } from '../transform/clip-transform'
+import { createInitialClipPlane } from '../transform/clip-transform'
 import type { SelectedPoint } from '../type'
 import type { BufferGeometry, Plane } from 'three'
 
@@ -59,7 +59,8 @@ export const MeshHistoryProvider: React.FC<{ children: React.ReactNode }> = ({
   const defaultState: MeshState = {
     selectedPoints: [],
     meshGeometry: undefined as any,
-    clipPlane: initialClipPlane,
+    // Use a fresh plane instance for the default state
+    clipPlane: createInitialClipPlane(),
   }
   const currentState =
     currentIndex >= 0 ? history[currentIndex].state : defaultState
@@ -120,9 +121,9 @@ export const MeshHistoryProvider: React.FC<{ children: React.ReactNode }> = ({
   )
 }
 
-export const useMeshHistory = () => {
+export const useMeshHistory = (): MeshHistoryContextType => {
   const ctx = useContext(MeshHistoryContext)
-  if (!ctx)
-    throw new Error('useMeshHistory must be used within MeshHistoryProvider')
+  if (ctx === undefined)
+    throw new Error('useMeshHistory must be used within <MeshHistoryProvider>')
   return ctx
 }
