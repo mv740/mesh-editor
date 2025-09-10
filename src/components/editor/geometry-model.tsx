@@ -15,7 +15,7 @@ import type { EditorState, MeshViewType, SelectedPoint } from './type'
 
 interface GeometryModelProps {
   stlUrl: string
-  viewType: MeshViewType
+  viewType?: MeshViewType
   onLoad?: () => void
   onPointSelect?: (
     point: Vector3,
@@ -35,7 +35,7 @@ interface GeometryModelProps {
 
 export const GeometryModel = ({
   stlUrl,
-  viewType,
+  viewType = 'solid',
   onLoad,
   onPointSelect,
   editorState,
