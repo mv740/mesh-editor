@@ -13,6 +13,7 @@ import {
   type Mesh,
 } from 'three'
 import { useMeshHistory } from '../history/mesh-history-provider'
+import type { MeshViewType } from '../type'
 import type { TransformControls as ThreeTransformControls } from 'three/addons/controls/TransformControls.js'
 
 // Helper: get intersection polygon between box and plane
@@ -99,19 +100,20 @@ const getBoxPlaneIntersectionPolygon = (box: Box3, plane: Plane): Vector3[] => {
 
 type ClipTransformComponentProps = {
   geometry: BufferGeometry
+  viewType: MeshViewType
   meshRef: React.RefObject<Mesh | null>
-  wireframe: boolean
   opacity: number
   color: string
   meshOutlineVisible?: boolean
 }
 
-export const initialClipPlane = new Plane(new Vector3(0, 0, 1), 0)
+export const createInitialClipPlane = (): Plane =>
+  new Plane(new Vector3(0, 0, 1), 0)
 
 export const ClipTransformComponent = ({
   geometry,
+  viewType,
   meshRef,
-  wireframe,
   opacity,
   color,
   meshOutlineVisible,
@@ -121,7 +123,8 @@ export const ClipTransformComponent = ({
     'translate',
   )
   // Clip plane
-  const [clipPlane, setClipPlane] = useState(initialClipPlane)
+  // Provide a factory to useState so each component gets its own Plane instance
+  const [clipPlane, setClipPlane] = useState(createInitialClipPlane)
   const clipPlaneRef = useRef<Mesh | null>(null)
   const { addToHistory, currentState, currentIndex } = useMeshHistory()
 
@@ -418,13 +421,17 @@ export const ClipTransformComponent = ({
       {/* The actual mesh with clipping applied */}
       <mesh name="inputMesh" ref={meshRef}>
         <primitive object={geometry} attach="geometry" />
-        <meshStandardMaterial
-          wireframe={wireframe}
-          transparent={true}
-          opacity={opacity}
-          color={color}
-          clippingPlanes={[clipPlane]}
-        />
+        {viewType !== 'normals' ? (
+          <meshStandardMaterial
+            wireframe={viewType === 'wireframe'}
+            transparent={true}
+            opacity={opacity}
+            color={color}
+            clippingPlanes={[clipPlane]}
+          />
+        ) : (
+          <meshNormalMaterial clippingPlanes={[clipPlane]} />
+        )}
 
         {meshOutlineVisible && <Helper type={BoxHelper} args={['royalblue']} />}
       </mesh>

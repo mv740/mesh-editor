@@ -7,8 +7,6 @@ import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 
 type ViewControlsProps = {
-  wireframeVisible: boolean
-  setWireframeVisible: (visible: boolean) => void
   opacity: number
   setOpacity: (opacity: number) => void
   landmarksVisible: boolean
@@ -19,24 +17,7 @@ type ViewControlsProps = {
   setHolesVisible: (visible: boolean) => void
 }
 
-/**
- * A React component that renders a set of view controls for a mesh editor.
- *
- *
- * @param wireframeVisible - Boolean indicating if the wireframe is visible.
- * @param setWireframeVisible - Function to set wireframe visibility.
- * @param opacity - Number representing the current opacity value.
- * @param setOpacity - Function to set the opacity value.
- * @param landmarksVisible - Boolean indicating if landmarks are visible.
- * @param setLandmarksVisible - Function to set landmarks visibility.
- * @param landmarkLabelsVisible - Boolean indicating if landmark labels are visible.
- * @param setLandmarkLabelsVisible - Function to set landmark labels visibility.
- * @param holesVisible - Boolean indicating if holes are visible.
- * @param setHolesVisible - Function to set holes visibility.
- */
 export const ViewControls = ({
-  wireframeVisible,
-  setWireframeVisible,
   opacity,
   setOpacity,
   landmarksVisible,
@@ -76,14 +57,6 @@ export const ViewControls = ({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="wireframe">Wireframe:</Label>
-            <Switch
-              id="wireframe"
-              checked={wireframeVisible}
-              onCheckedChange={setWireframeVisible}
-            />
-          </div>
           <div className="flex items-center gap-2">
             <Label htmlFor="opacity">Opacity:</Label>
             <Slider
