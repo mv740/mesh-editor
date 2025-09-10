@@ -19,8 +19,13 @@ import { TransformControls } from './controls/transform-controls'
 import { ViewControls } from './controls/view-controls'
 import { GeometryModel } from './geometry-model'
 import { useMeshHistory } from './history/mesh-history-provider'
+import {
+  MeshViewLabels,
+  type EditorState,
+  type MeshViewType,
+  type SelectedPoint,
+} from './type'
 import { exportMesh } from './utils/geometry-utils'
-import type { EditorState, SelectedPoint } from './type'
 import type { Scene, Vector3 } from 'three'
 
 interface InputSettings {
@@ -74,8 +79,8 @@ export function MeshEditorInner({
   }, [inputSettings?.file])
 
   // Mesh
-  const [wireframeVisible, setWireframeVisible] = useState<boolean>(false)
   const [opacity, setOpacity] = useState<number>(1)
+  const [viewType, setViewType] = useState<MeshViewType>('solid')
 
   const nextPointId = useRef(1)
   const [selectedLandmarkId, setSelectedLandmarkId] = useState<number | null>(
@@ -218,6 +223,26 @@ export function MeshEditorInner({
         <div className="relative w-full flex-1 rounded-lg overflow-hidden min-h-0">
           {/* Overlay for controls */}
           <div className="absolute inset-0 w-full h-full flex flex-wrap z-10 pointer-events-none justify-between p-3">
+            {/* Top-center overlay toggle (Mesh view) */}
+            <div className="absolute inset-x-0 bottom-2 p-2 flex justify-center pointer-events-none z-20">
+              <div className="pointer-events-auto w-max">
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  defaultValue={viewType}
+                  onValueChange={(value: MeshViewType) => {
+                    setViewType(value)
+                  }}
+                >
+                  {Object.entries(MeshViewLabels).map(([value, label]) => (
+                    <ToggleGroupItem className="px-4" key={value} value={value}>
+                      {label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+            </div>
+
             {editorState === 'landmarks' && (
               <div className="pointer-events-auto h-fit">
                 <LandmarksControls
@@ -252,8 +277,6 @@ export function MeshEditorInner({
                   setLandmarksVisible={setLandmarksVisible}
                   opacity={opacity}
                   setOpacity={setOpacity}
-                  setWireframeVisible={setWireframeVisible}
-                  wireframeVisible={wireframeVisible}
                   landmarkLabelsVisible={landmarksLabelsVisible}
                   setLandmarkLabelsVisible={setLandmarksLabelsVisible}
                   holesVisible={holesVisible}
@@ -292,13 +315,13 @@ export function MeshEditorInner({
 
                     <GeometryModel
                       stlUrl={fileObjectPath}
+                      viewType={viewType}
                       editorState={editorState}
                       selectedPoints={currentState.selectedPoints}
                       onPointSelect={handlePointSelect}
                       selectedLandmarkId={selectedLandmarkId}
                       setSelectedLandmarkId={setSelectedLandmarkId}
                       landmarksVisible={landmarksVisible}
-                      wireframeVisible={wireframeVisible}
                       meshOpacity={opacity}
                       landmarkLabelsVisible={landmarksLabelsVisible}
                       meshOutlineVisible={meshOutlineVisible}
