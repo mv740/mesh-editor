@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "esnext",
     "jsx": "react-jsx",
-    "lib": ["es2023", "DOM", "DOM.Iterable"],
+    "lib": ["es2023", "DOM", "DOM.Iterable", "WebWorker"],
     "moduleDetection": "force",
     "baseUrl": ".",
     "module": "preserve",

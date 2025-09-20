@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/src/wasm",
+        "/usr/include",
+        "${workspaceFolder}/**",
+        "/home/mv740/git/emsdk/upstream/emscripten/system/include",
+        "/home/mv740/lib/geogram/include/geogram1"
+      ],
+      "defines": [],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64"
+    }
+  ],
+  "version": 4
+}

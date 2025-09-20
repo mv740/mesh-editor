@@ -22,6 +22,7 @@ type ActionType =
   | 'moveClipPlane'
   | 'clipTransform'
   | 'fillHoleTransform'
+  | 'remeshTransform'
 
 export type MeshHistoryEntry = {
   state: MeshState
