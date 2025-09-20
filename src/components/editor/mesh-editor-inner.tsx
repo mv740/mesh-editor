@@ -90,7 +90,7 @@ export function MeshEditorInner({
   const [landmarksLabelsVisible, setLandmarksLabelsVisible] =
     useState<boolean>(true)
 
-  const [holesVisible, setHolesVisible] = useState<boolean>(true)
+  const [holesVisible, setHolesVisible] = useState<boolean>(false)
 
   // Call onLandmarksChange whenever selectedPoints changes
   useEffect(() => {
