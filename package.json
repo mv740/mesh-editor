@@ -29,7 +29,9 @@
   "scripts": {
     "lint": "eslint --cache .",
     "lint:fix": "npm run lint -- --fix",
-    "build": "tsdown",
+    "build:js": "tsdown",
+    "build:css": "npx @tailwindcss/cli -i ./src/index.css -o ./dist/style.css",
+    "build": "npm run build:js && npm run build:css",
     "dev": "tsdown --watch",
     "playground": "vite --config playground/vite.config.ts",
     "playground:host": "vite --host 0.0.0.0 --config playground/vite.config.ts",
@@ -71,6 +73,7 @@
     "@react-three/test-renderer": "^9.1.0",
     "@sxzz/eslint-config": "^7.0.1",
     "@sxzz/prettier-config": "^2.2.1",
+    "@tailwindcss/cli": "^4.1.13",
     "@tailwindcss/vite": "^4.1.10",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
