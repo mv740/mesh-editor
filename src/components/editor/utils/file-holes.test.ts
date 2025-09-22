@@ -14,7 +14,10 @@ import type { BufferGeometry } from 'three'
 describe('FileHoles', () => {
   let geometry: BufferGeometry
   beforeAll(() => {
-    const filePath = resolve(process.cwd(), 'playground/assets/bunny.bin.stl')
+    const filePath = resolve(
+      process.cwd(),
+      'playground/public/assets/bunny.bin.stl',
+    )
     const fileBuffer = readFileSync(filePath)
     const arrayBuffer = fileBuffer.buffer.slice(
       fileBuffer.byteOffset,

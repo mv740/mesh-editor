@@ -16,7 +16,10 @@ describe('GeometryModel', () => {
 
   it('should render mesh', async () => {
     // Resolve from project root
-    const filePath = resolve(process.cwd(), 'playground/assets/bunny.bin.stl')
+    const filePath = resolve(
+      process.cwd(),
+      'playground/public/assets/bunny.bin.stl',
+    )
     expect(existsSync(filePath)).toBe(true)
 
     // Read file and convert to data URL
@@ -62,7 +65,10 @@ describe('GeometryModel', () => {
 
   it('should render landmarks when selectedPoints are provided', async () => {
     // Resolve from project root
-    const filePath = resolve(process.cwd(), 'playground/assets/bunny.bin.stl')
+    const filePath = resolve(
+      process.cwd(),
+      'playground/public/assets/bunny.bin.stl',
+    )
     expect(existsSync(filePath)).toBe(true)
 
     // Read file and convert to data URL
@@ -141,7 +147,10 @@ describe('GeometryModel', () => {
   })
 
   it('should add a landmark at the clicked position on the mesh', async () => {
-    const filePath = resolve(process.cwd(), 'playground/assets/bunny.bin.stl')
+    const filePath = resolve(
+      process.cwd(),
+      'playground/public/assets/bunny.bin.stl',
+    )
     expect(existsSync(filePath)).toBe(true)
     const fileBuffer = readFileSync(filePath)
     const base64 = fileBuffer.toString('base64')
