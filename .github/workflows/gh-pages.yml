@@ -1,4 +1,8 @@
-name: Deploy to GitHub Pages
+name: GitHub Pages
+
+# Allow the workflow's GITHUB_TOKEN to push commit(s) (required by peaceiris/actions-gh-pages)
+permissions:
+  contents: write
 
 # Run after the Unit Test workflow completes successfully on the `main` branch.
 on:
