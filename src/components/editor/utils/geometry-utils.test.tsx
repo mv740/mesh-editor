@@ -14,7 +14,10 @@ describe('GeometryUtils', () => {
   let dataUrl: string
   // let tempFolder: string
   beforeAll(() => {
-    const filePath = resolve(process.cwd(), 'playground/assets/bunny.bin.stl')
+    const filePath = resolve(
+      process.cwd(),
+      'playground/public/assets/bunny.bin.stl',
+    )
     // Read file and convert to data URL
     const fileBuffer = readFileSync(filePath)
     const base64 = fileBuffer.toString('base64')

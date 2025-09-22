@@ -12,4 +12,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, '../src'),
     },
   },
+  build: {
+    // outDir: '../dist', // This will output to the root level "dist" folder
+  },
 })
