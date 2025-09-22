@@ -7,7 +7,29 @@ on:
     branches: [main]
 
 jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set node LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
   test:
+    needs: lint-and-typecheck
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,12 +49,6 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
 
       - name: Test
         run: npm run test:coverage

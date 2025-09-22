@@ -34,6 +34,8 @@
     "build": "npm run build:js && npm run build:css",
     "dev": "tsdown --watch",
     "playground": "vite --config playground/vite.config.ts",
+    "playground:build": "vite build --config playground/vite.config.ts",
+    "playground:preview": "vite preview --config playground/vite.config.ts",
     "playground:host": "vite --host 0.0.0.0 --config playground/vite.config.ts",
     "test": "vitest --browser.headless",
     "test:coverage": "vitest --coverage --browser.headless",
