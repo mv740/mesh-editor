@@ -1,8 +1,15 @@
 {
-  "name": "mesh-editor",
-  "version": "0.0.0",
-  "description": "React mesh editor component library",
+  "name": "@mv740/mesh-editor",
+  "version": "0.0.1",
+  "description": "Interactive 3D mesh editor component for React",
   "type": "module",
+  "keywords": [
+    "react",
+    "threejs",
+    "mesh",
+    "editor",
+    "3d"
+  ],
   "license": "MIT",
   "homepage": "https://github.com/mv740/mesh-editor#readme",
   "bugs": {
@@ -12,7 +19,7 @@
     "type": "git",
     "url": "git+https://github.com/mv740/mesh-editor.git"
   },
-  "author": "Michal Wozniak",
+  "author": "Michal Wozniak <michal@wozniak.dev>",
   "files": [
     "dist"
   ],
