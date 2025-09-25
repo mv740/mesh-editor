@@ -1,6 +1,6 @@
 # mesh-editor
 
-[![Unit Test](https://github.com/mv740/mesh-editor/actions/workflows/test.yml/badge.svg)](https://github.com/mv740/mesh-editor/actions/workflows/unit-test.yml)
+[![Test Pipeline](https://github.com/mv740/mesh-editor/actions/workflows/test.yml/badge.svg)](https://github.com/mv740/mesh-editor/actions/workflows/test.yml)
 
 A powerful and interactive 3D mesh editor component for React. `mesh-editor` provides a comprehensive solution for viewing and manipulating 3D models directly in the browser.
 
@@ -12,6 +12,16 @@ A powerful and interactive 3D mesh editor component for React. `mesh-editor` pro
   - **Landmarks**: Add, move, and delete landmarks on the mesh surface.
   - **Fill Holes**: Automatically detect and fill holes in the mesh.
   - **Clip Mesh**: Cut the mesh with a clipping plane.
+
+## Demo
+
+### Landmarks
+
+![Landmarks demo](./docs/landmarks.gif)
+
+### Clip/Fill hole
+
+![Fill holes demo](./docs/clip-fill-hole.gif)
 
 ## Usage
 
@@ -42,7 +52,7 @@ function MyEditor() {
 npm install
 ```
 
-- Run the playground:
+- Run the playground and open http://localhost:5173 (or the port printed by Vite):
 
 ```bash
 npm run playground
