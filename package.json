@@ -28,8 +28,11 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
+    "./style.css": "./dist/style.css",
+    "./dist/style.css": "./dist/style.css",
     "./package.json": "./package.json"
   },
+  "style": "dist/style.css",
   "publishConfig": {
     "access": "public"
   },
@@ -50,8 +53,12 @@
     "test:e2e": "vitest --project e2e",
     "typecheck": "tsc --noEmit",
     "format": "npm --cache --write .",
-    "release": "bumpp && npm publish",
+    "release": "npm publish",
     "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19"
   },
   "dependencies": {
     "@kninnug/constrainautor": "^4.0.1",
@@ -80,6 +87,7 @@
   },
   "devDependencies": {
     "@react-three/test-renderer": "^9.1.0",
+    "@semantic-release/changelog": "^6.0.3",
     "@sxzz/eslint-config": "^7.0.1",
     "@sxzz/prettier-config": "^2.2.1",
     "@tailwindcss/cli": "^4.1.13",
@@ -96,13 +104,13 @@
     "@vitest/browser": "^3.2.4",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
-    "bumpp": "^10.1.0",
     "eslint": "^9.26.0",
     "happy-dom": "^17.4.6",
     "playwright": "^1.53.1",
     "prettier": "^3.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "semantic-release": "^24.2.9",
     "tailwindcss": "^4.1.10",
     "tsdown": "^0.11.1",
     "tsx": "^4.19.4",

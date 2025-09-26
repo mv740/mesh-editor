@@ -28,8 +28,8 @@ A powerful and interactive 3D mesh editor component for React. `mesh-editor` pro
 Here's a basic example of how to integrate the `MeshEditor` into your React application:
 
 ```tsx
-import { MeshEditor } from 'mesh-editor'
-import 'mesh-editor/dist/style.css'
+import { MeshEditor } from '@mv740/mesh-editor'
+import '@mv740/mesh-editor/style.css'
 
 function MyEditor() {
   const [file, setFile] = useState<File | null>(null)
