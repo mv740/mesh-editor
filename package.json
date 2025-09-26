@@ -1,6 +1,6 @@
 {
   "name": "@mv740/mesh-editor",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Interactive 3D mesh editor component for React",
   "type": "module",
   "keywords": [
@@ -88,6 +88,7 @@
   "devDependencies": {
     "@react-three/test-renderer": "^9.1.0",
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@sxzz/eslint-config": "^7.0.1",
     "@sxzz/prettier-config": "^2.2.1",
     "@tailwindcss/cli": "^4.1.13",
