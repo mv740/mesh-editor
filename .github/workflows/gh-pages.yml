@@ -4,17 +4,21 @@ name: GitHub Pages
 permissions:
   contents: write
 
-# Run after the Unit Test workflow completes successfully on the `main` branch.
+# Run after the Release workflow completes successfully on the `main` branch.
 on:
   workflow_run:
-    workflows: [Unit Test]
+    workflows: [Release]
     types:
       - completed
+  # Allow manual deployment from the Actions tab
+  workflow_dispatch:
 
 jobs:
   deploy:
-    # Only run when the Unit Test workflow completed successfully for main
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    # Only run when either:
+    # - the Release workflow completed successfully for the `main` branch (workflow_run), or
+    # - the workflow was manually dispatched for the `main` branch (workflow_dispatch)
+    if: ${{ (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -37,3 +41,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./playground/dist
+          publish_branch: gh-pages
+          force_orphan: true # Creates fresh branch each time

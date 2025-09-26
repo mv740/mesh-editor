@@ -7,12 +7,10 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   root: './playground',
   plugins: [react(), tailwindcss()],
+  base: '/mesh-editor/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '../src'),
     },
-  },
-  build: {
-    // outDir: '../dist', // This will output to the root level "dist" folder
   },
 })
