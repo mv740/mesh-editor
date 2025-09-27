@@ -80,6 +80,9 @@ export const TransformControls = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col p-4 overflow-hidden">
+        <div className="mb-4 text-sm text-muted-foreground text-center font-medium">
+          Use right-click to switch the gizmo mode (Translate or Rotate).
+        </div>
         <ScrollArea className="flex-1 min-h-24 gap-2" type="auto">
           <div className="flex flex-col gap-2">
             <Card>
