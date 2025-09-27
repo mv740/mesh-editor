@@ -123,6 +123,7 @@ export const GeometryModel = ({
     <Bvh name="bvh-group">
       <mesh
         name="inputMesh"
+        key={editorState}
         ref={meshRef}
         onDoubleClick={
           editorState === 'landmarks' ? handleMeshClick : undefined
