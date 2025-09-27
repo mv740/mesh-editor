@@ -1,6 +1,6 @@
 import { Bvh } from '@react-three/drei'
 import { useLoader, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import {
   DoubleSide,
   type Mesh,
@@ -123,7 +123,6 @@ export const GeometryModel = ({
     <Bvh name="bvh-group">
       <mesh
         name="inputMesh"
-        key={editorState}
         ref={meshRef}
         onDoubleClick={
           editorState === 'landmarks' ? handleMeshClick : undefined
@@ -145,7 +144,7 @@ export const GeometryModel = ({
     </Bvh>
   )
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (meshRef.current && !initialCameraSetupRef.current) {
       meshRef.current.geometry.center()
 
