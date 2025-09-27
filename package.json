@@ -1,6 +1,6 @@
 {
   "name": "@mv740/mesh-editor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Interactive 3D mesh editor component for React",
   "type": "module",
   "keywords": [

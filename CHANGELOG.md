@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/mv740/mesh-editor/compare/v1.0.1...v1.0.2) (2025-09-27)
+
+
+### Bug Fixes
+
+* fix production-only missed onDoubleClick by remounting mesh ([fb4981d](https://github.com/mv740/mesh-editor/commit/fb4981d943c4a222e037cec5bc77ea07bc299794))
+
 ## [1.0.1](https://github.com/mv740/mesh-editor/compare/v1.0.0...v1.0.1) (2025-09-26)
 
 
