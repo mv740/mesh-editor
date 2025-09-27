@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/mv740/mesh-editor/compare/v1.0.2...v1.0.3) (2025-09-27)
+
+
+### Bug Fixes
+
+* run initial recenter/camera code in useLayoutEffect to avoid stale raycasts ([1e11895](https://github.com/mv740/mesh-editor/commit/1e118956495ac5b81c8f7a9f58143bdf578767df))
+
 ## [1.0.2](https://github.com/mv740/mesh-editor/compare/v1.0.1...v1.0.2) (2025-09-27)
 
 
